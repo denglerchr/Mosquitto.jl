@@ -1,12 +1,9 @@
-#struct mosquitto *mosquitto_new(	const 	char 	*	id,
-#bool 		clean_session,
-#void 	*	obj	)
 struct cmosquitto end
 
-struct cmosquitto_message
+struct CMosquittoMessage
     mid::Cint
 	topic::Cstring
-	payload::Ref{Cvoid}
+	payload::Ref{UInt8}
 	payloadlen::Cint
     qos::Cint
 	retain::Bool
@@ -35,69 +32,61 @@ finalizer(client::CMosquittoClient) = destroy(client)
 
 function connect(client::CMosquittoClient, host::String; port::Int = 1883, keepalive::Int = 60)
     msg_nr =  ccall((:mosquitto_connect, libmosquitto), Cint, (Ptr{cmosquitto}, Cstring, Cint, Cint), client.cobj, host, port, keepalive)
-    msg_nr != 0 && @warn "Connection not succeeded, returned $msg_nr"
     return msg_nr
 end
 
 function disconnect(client::CMosquittoClient)
     ccall((:mosquitto_disconnect, libmosquitto), Cint, (Ptr{cmosquitto},), client.cobj)
-    msg_nr != 0 && @warn "Disconnecting not succeeded, returned $msg_nr"
     return msg_nr
 end
 
-function publish(client::CMosquittoClient, topic::String, payload::String; qos::Int = 1, retain::Bool = true)
-    payloadlen = sizeof(payload)
+function publish(client::CMosquittoClient, topic::String, payload; qos::Int = 1, retain::Bool = true)
+    payloadnew = getbytes(payload)
+    payloadlen = sizeof(payloadnew)
     mid = Int[0]
     msg_nr = ccall((:mosquitto_publish, libmosquitto), Cint,
-    (Ptr{cmosquitto}, Ptr{Cint}, Cstring, Cint, Cstring, Cint, Bool), 
-    client.cobj, mid, topic, payloadlen, payload, qos, retain)
-    msg_nr != 0 && @warn "Publishing not succeeded, returned $msg_nr"
+    (Ptr{cmosquitto}, Ptr{Cint}, Cstring, Cint, Ptr{UInt8}, Cint, Bool), 
+    client.cobj, mid, topic, payloadlen, payloadnew, qos, retain)
     return msg_nr
 end
 
 
 function subscribe(client::CMosquittoClient, sub::String; qos::Int = 1)
-    mid = Int[0]
+    mid = zeros(Cint, 1)
     msg_nr = ccall((:mosquitto_subscribe, libmosquitto), Cint, 
     (Ptr{cmosquitto}, Ptr{Cint}, Cstring, Cint),
     client.cobj, mid, sub, qos)
-    msg_nr != 0 && @warn "Subsription not succeeded, returned $msg_nr"
     return msg_nr
 end
 
 function unsubscribe(client::CMosquittoClient, sub::String)
-    mid = Int[0]
+    mid = zeros(Cint, 1)
     msg_nr = ccall((:mosquitto_unsubscribe, libmosquitto), Cint, 
     (Ptr{cmosquitto}, Ptr{Cint}, Cstring),
     client.cobj, mid, sub)
-    msg_nr != 0 && @warn "Unsubsription not succeeded, returned $msg_nr"
     return msg_nr
 end
 
 function loop_start(client::CMosquittoClient)
-    ccall((:mosquitto_loop_start, libmosquitto), Cint, (Ptr{cmosquitto},), client.cobj)
-    msg_nr != 0 && @warn "Loop_starting not succeeded, returned $msg_nr"
+    msg_nr = ccall((:mosquitto_loop_start, libmosquitto), Cint, (Ptr{cmosquitto},), client.cobj)
     return msg_nr
 end
 
 function loop_stop(client::CMosquittoClient; force::Bool = false)
-    ccall((:mosquitto_loop_stop, libmosquitto), Cint, (Ptr{cmosquitto}, Bool), client.cobj, force)
-    msg_nr != 0 && @warn "Loop_stoping not succeeded, returned $msg_nr"
+    msg_nr = ccall((:mosquitto_loop_stop, libmosquitto), Cint, (Ptr{cmosquitto}, Bool), client.cobj, force)
     return msg_nr
 end
 
 function connect_callback_set(client::CMosquittoClient, f::Function)
     cfunc = @cfunction($f, Cvoid, (Ptr{cmosquitto}, Ptr{Cvoid}, Cint))
     msg_nr = ccall((:mosquitto_connect_callback_set, libmosquitto), Cint, (Ptr{cmosquitto}, Ptr{Cvoid}), client.cobj, cfunc)
-    msg_nr != 0 && @warn "connect_callback_set not succeeded, returned $msg_nr"
     return msg_nr
 end
 
 function message_callback_set(client::CMosquittoClient, f::Function)
-    cfunc = @cfunction($f, Cvoid, (Ptr{cmosquitto}, Ptr{Cvoid}, Ptr{cmosquitto_message}))
-    msg_nr = ccall((:mosquitto_message_callback_set, libmosquitto), Cint, (Ptr{cmosquitto}, Ptr{Cvoid}), client.cobj, cfunc)
-    msg_nr != 0 && @warn "message_callback_set not succeeded, returned $msg_nr"
-    return msg_nr
+    cfunc = @cfunction($f, Cvoid, (Ptr{cmosquitto}, Ptr{Cvoid}, Ptr{CMosquittoMessage}))
+    ccall((:mosquitto_message_callback_set, libmosquitto), Cvoid, (Ptr{cmosquitto}, Ptr{Cvoid}), client.cobj, cfunc)
+    return nothing
 end
 
 function lib_version()
