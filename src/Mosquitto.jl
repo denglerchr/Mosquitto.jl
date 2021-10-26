@@ -1,3 +1,6 @@
+# Documentation
+# https://mosquitto.org/api/files/mosquitto-h.html#mosquitto_message_callback_set
+# https://github.com/eclipse/mosquitto/blob/master/include/mosquitto.h
 module Mosquitto
 
 import Base.finalizer
@@ -16,6 +19,6 @@ include("cwrapper.jl")
 export lib_version
 
 include("client.jl")
-export Client, publish, subscribe!, startloop, stoploop
+export Client, publish, subscribe!, startloop, stoploop, disconnect
 
 end # module

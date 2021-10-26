@@ -1,91 +1,80 @@
-struct cmosquitto end
+struct Cmosquitto end
 
 struct CMosquittoMessage
     mid::Cint
 	topic::Cstring
-	payload::Ref{UInt8}
+	payload::Ref{Cvoid}
 	payloadlen::Cint
     qos::Cint
 	retain::Bool
 end
 
-mutable struct CMosquittoClient
-    cobj::Ref{cmosquitto}
-    obj::Ref{Cvoid}
-    function CMosquittoClient(id::String, clean_start::Bool, obj)
-        cobj = ccall((:mosquitto_new, libmosquitto), Ptr{cmosquitto}, (Cstring, Bool, Ptr{Any}), id, clean_start, obj)
-        return new(cobj, obj)
-    end
+function mosquitto_new(id::String, clean_start::Bool, obj)
+    return ccall((:mosquitto_new, libmosquitto), Ptr{Cmosquitto}, (Cstring, Bool, Ptr{Cvoid}), id, clean_start, obj)
 end
-
-CMosquittoClient(id::String; clean_start::Bool = false, obj = Nothing[]) = CMosquittoClient(id, clean_start, obj)
-
 
 #void mosquitto_destroy(	struct 	mosquitto 	*	mosq	)
-function destroy(client::CMosquittoClient)
-    ccall((:mosquitto_destroy, libmosquitto), Cvoid, (Ptr{cmosquitto},), client.cobj)
-    a.cobj = Ref(cmosquitto())
-    return client
+function destroy(client::Ref{Cmosquitto})
+    return ccall((:mosquitto_destroy, libmosquitto), Cvoid, (Ptr{Cmosquitto},), client)
 end
-finalizer(client::CMosquittoClient) = destroy(client)
+finalizer(client::Ref{Cmosquitto}) = destroy(client)
 
 
-function connect(client::CMosquittoClient, host::String; port::Int = 1883, keepalive::Int = 60)
-    msg_nr =  ccall((:mosquitto_connect, libmosquitto), Cint, (Ptr{cmosquitto}, Cstring, Cint, Cint), client.cobj, host, port, keepalive)
+function connect(client::Ref{Cmosquitto}, host::String; port::Int = 1883, keepalive::Int = 60)
+    msg_nr =  ccall((:mosquitto_connect, libmosquitto), Cint, (Ptr{Cmosquitto}, Cstring, Cint, Cint), client, host, port, keepalive)
     return msg_nr
 end
 
-function disconnect(client::CMosquittoClient)
-    ccall((:mosquitto_disconnect, libmosquitto), Cint, (Ptr{cmosquitto},), client.cobj)
+function disconnect(client::Ref{Cmosquitto})
+    ccall((:mosquitto_disconnect, libmosquitto), Cint, (Ptr{Cmosquitto},), client)
     return msg_nr
 end
 
-function publish(client::CMosquittoClient, topic::String, payload; qos::Int = 1, retain::Bool = true)
+function publish(client::Ref{Cmosquitto}, topic::String, payload; qos::Int = 1, retain::Bool = true)
     payloadnew = getbytes(payload)
     payloadlen = sizeof(payloadnew)
     mid = Int[0]
     msg_nr = ccall((:mosquitto_publish, libmosquitto), Cint,
-    (Ptr{cmosquitto}, Ptr{Cint}, Cstring, Cint, Ptr{UInt8}, Cint, Bool), 
-    client.cobj, mid, topic, payloadlen, payloadnew, qos, retain)
+    (Ptr{Cmosquitto}, Ptr{Cint}, Cstring, Cint, Ptr{UInt8}, Cint, Bool), 
+    client, mid, topic, payloadlen, payloadnew, qos, retain)
     return msg_nr
 end
 
 
-function subscribe(client::CMosquittoClient, sub::String; qos::Int = 1)
+function subscribe(client::Ref{Cmosquitto}, sub::String; qos::Int = 1)
     mid = zeros(Cint, 1)
     msg_nr = ccall((:mosquitto_subscribe, libmosquitto), Cint, 
-    (Ptr{cmosquitto}, Ptr{Cint}, Cstring, Cint),
-    client.cobj, mid, sub, qos)
+    (Ptr{Cmosquitto}, Ptr{Cint}, Cstring, Cint),
+    client, mid, sub, qos)
     return msg_nr
 end
 
-function unsubscribe(client::CMosquittoClient, sub::String)
+function unsubscribe(client::Ref{Cmosquitto}, sub::String)
     mid = zeros(Cint, 1)
     msg_nr = ccall((:mosquitto_unsubscribe, libmosquitto), Cint, 
-    (Ptr{cmosquitto}, Ptr{Cint}, Cstring),
-    client.cobj, mid, sub)
+    (Ptr{Cmosquitto}, Ptr{Cint}, Cstring),
+    client, mid, sub)
     return msg_nr
 end
 
-function loop_start(client::CMosquittoClient)
-    msg_nr = ccall((:mosquitto_loop_start, libmosquitto), Cint, (Ptr{cmosquitto},), client.cobj)
+function loop_start(client::Ref{Cmosquitto})
+    msg_nr = ccall((:mosquitto_loop_start, libmosquitto), Cint, (Ptr{Cmosquitto},), client)
     return msg_nr
 end
 
-function loop_stop(client::CMosquittoClient; force::Bool = false)
-    msg_nr = ccall((:mosquitto_loop_stop, libmosquitto), Cint, (Ptr{cmosquitto}, Bool), client.cobj, force)
+function loop_stop(client::Ref{Cmosquitto}; force::Bool = false)
+    msg_nr = ccall((:mosquitto_loop_stop, libmosquitto), Cint, (Ptr{Cmosquitto}, Bool), client, force)
     return msg_nr
 end
 
-function connect_callback_set(client::CMosquittoClient, f::Function)
-    cfunc = @cfunction($f, Cvoid, (Ptr{cmosquitto}, Ptr{Cvoid}, Cint))
-    msg_nr = ccall((:mosquitto_connect_callback_set, libmosquitto), Cint, (Ptr{cmosquitto}, Ptr{Cvoid}), client.cobj, cfunc)
+function connect_callback_set(client::Ref{Cmosquitto}, f::Function)
+    cfunc = @cfunction($f, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Cint))
+    msg_nr = ccall((:mosquitto_connect_callback_set, libmosquitto), Cint, (Ptr{Cmosquitto}, Ptr{Cvoid}), client, cfunc)
     return msg_nr
 end
 
-function message_callback_set(client::CMosquittoClient, f::Function)
-    cfunc = @cfunction($f, Cvoid, (Ptr{cmosquitto}, Ptr{Cvoid}, Ptr{CMosquittoMessage}))
-    ccall((:mosquitto_message_callback_set, libmosquitto), Cvoid, (Ptr{cmosquitto}, Ptr{Cvoid}), client.cobj, cfunc)
+function message_callback_set(client::Ref{Cmosquitto}, cfunc)
+    ccall((:mosquitto_message_callback_set, libmosquitto), Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}), client, cfunc)
     return nothing
 end
 
@@ -95,6 +84,10 @@ function lib_version()
     rev = zeros(Int, 1)
     ccall((:mosquitto_lib_version, libmosquitto), Cint, (Ptr{Cint}, Ptr{Cint}, Ptr{Cint}), maj, min, rev)
     return maj[1], min[1], rev[1]
+end
+
+function lib_cleanup()
+    ccall((:mosquitto_lib_cleanup, libmosquitto), Cvoid, (Cvoid,), nothing)
 end
 
 function cleanup()
