@@ -23,7 +23,7 @@ function connect_callback_set(client::Ptr{Cmosquitto}, cfunc)
 end
 
 # callback function
-callback_connect_jl(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, Cint) = println("Connection ok")
+callback_connect_jl(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, unused::Cint) = println("Connection ok")
 callback_connect_c = @cfunction(callback_connect_jl, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Cint))
 
 ## Script
