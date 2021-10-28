@@ -19,6 +19,6 @@ include("cwrapper.jl")
 export lib_version
 
 include("client.jl")
-export Client, publish, subscribe!, startloop, stoploop, disconnect
+export Client, publish, subscribe, unsubscribe, loop, disconnect
 
 end # module

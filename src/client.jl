@@ -1,8 +1,10 @@
+import Base.n_avail
+
 mutable struct Client
     id::String
     cmosc::Ref{Cmosquitto}
     cobj::Ref{Cvoid} # do I need this? Free this?
-    connected::Bool
+    channel::AbstractChannel
 end
 
 function finalizer(client::Client)
@@ -10,20 +12,22 @@ function finalizer(client::Client)
     destroy(client.cmosc)
 end
 
-function Client(ip::String, port::Int=1883; keepalive::Int = 60, id::String = randstring(15) )
+function Client(ip::String, port::Int=1883; keepalive::Int = 60, id::String = randstring(15), channel::AbstractChannel = Channel{Any}(5) )
     cobj = Ref{Cvoid}()
     cmosc = mosquitto_new(id, true, cobj)
     flag = connect(cmosc, ip; port = port, keepalive = keepalive)
     flag != 0 && throw("connection to the broker failed" )
-    flag = loop_start(cmosc)
-    flag != 0 && throw("could not start network loop" )
-    return Client(id, cmosc, cobj, true )
+    # Set callbacks
+    #f_callback(mos, obj, message) = callback_message(mos, obj, message)#, channel)
+    cfunc = @cfunction($callback_message, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Ptr{CMosquittoMessage}))
+    message_callback_set(cmosc, cfunc)
+    # Start (julia) loop here
+    return Client(id, cmosc, cobj, channel)
 end
 
 function disconnect(client::Client)
     flag = disconnect(client.cmosc)
-    client.connected = (client.connected && !(flag == 0))
-    loop_stop(client.cmosc)
+    # Stop (julia) loop here
     return client
 end
 
@@ -31,18 +35,20 @@ function publish(client::Client, topic::String, payload; qos::Int = 1, retain::B
     return publish(client.cmosc, topic, payload; qos = qos, retain = retain)
 end
 
-function subscribe!(client::Client, topic::String; qos::Int = 1)
-    subscribe(client.cmosc, topic; qos = qos)
-    # Todo return channel here
-    cfunc = @cfunction($callbackfunc, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Ptr{CMosquittoMessage}))
-    return message_callback_set(client.cmosc, cfunc)
-    # return channel
+function subscribe(client::Client, topic::String; qos::Int = 1)
+    return subscribe(client.cmosc, topic; qos = qos)
 end
 
-function callbackfunc(mos::Ref{Cmosquitto}, obj::Ref{Cvoid}, message::Ref{CMosquittoMessage})
-    #jmessage = unsafe_load(message[].payload, message[].payloadlen)
-    #push!(channel, jmessage)
-    println("message received")
+function callback_message(mos::Ref{Cmosquitto}, obj::Ref{Cvoid}, message::Ref{CMosquittoMessage})#, channel::AbstractChannel)
+    jlmessage = unsafe_load(message)
+    println("message received of length $(jlmessage.payloadlen).")
+
+    jlpayload = [unsafe_load(jlmessage.payload, i) for i = 1:jlmessage.payloadlen]
+    println(String(jlpayload))
+    #if n_avail(channel)>=channel.sz_max
+    #    take!(channel) # remove one message
+    #end
+    #put!(channel, jmessage)
     return nothing
 end
 
@@ -50,10 +56,6 @@ function unsubscribe(client::Client, topic::String)
     return unsubscribe(client.cmosc, topic)
 end
 
-function startloop(client::Client)
-    return loop_start(client.cmosc)
-end
-
-function stoploop(client::Client)
-    return loop_stop(client.cmosc)
+function loop(client::Client; timeout::Int = 2000)
+    return loop(client.cmosc; timeout = timeout)
 end

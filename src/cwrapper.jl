@@ -3,7 +3,7 @@ struct Cmosquitto end
 struct CMosquittoMessage
     mid::Cint
 	topic::Cstring
-	payload::Ref{Cvoid}
+	payload::Ptr{UInt8} # we treat payload as raw bytes
 	payloadlen::Cint
     qos::Cint
 	retain::Bool
@@ -57,6 +57,7 @@ function unsubscribe(client::Ref{Cmosquitto}, sub::String)
     return msg_nr
 end
 
+# Broken?
 function loop_start(client::Ref{Cmosquitto})
     msg_nr = ccall((:mosquitto_loop_start, libmosquitto), Cint, (Ptr{Cmosquitto},), client)
     return msg_nr
@@ -67,10 +68,17 @@ function loop_stop(client::Ref{Cmosquitto}; force::Bool = false)
     return msg_nr
 end
 
-function connect_callback_set(client::Ref{Cmosquitto}, f::Function)
-    cfunc = @cfunction($f, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Cint))
-    msg_nr = ccall((:mosquitto_connect_callback_set, libmosquitto), Cint, (Ptr{Cmosquitto}, Ptr{Cvoid}), client, cfunc)
-    return msg_nr
+function loop_forever(client; timeout::Int = 1000, max_packets::Int = 1)
+    return ccall((:mosquitto_loop_forever, libmosquitto), Cint, (Ptr{Cmosquitto}, Cint, Cint), client, timeout, max_packets)
+end
+
+function loop(client; timeout::Int = 1000, max_packets::Int = 1)
+    return ccall((:mosquitto_loop, libmosquitto), Cint, (Ptr{Cmosquitto}, Cint, Cint), client, timeout, max_packets)
+end
+
+function connect_callback_set(client::Ref{Cmosquitto}, cfunc)
+    #cfunc = @cfunction($f, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Cint))
+    return ccall((:mosquitto_connect_callback_set, libmosquitto), Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}), client, cfunc)
 end
 
 function message_callback_set(client::Ref{Cmosquitto}, cfunc)
@@ -88,8 +96,4 @@ end
 
 function lib_cleanup()
     ccall((:mosquitto_lib_cleanup, libmosquitto), Cvoid, (Cvoid,), nothing)
-end
-
-function cleanup()
-    ccall((:mosquitto_lib_cleanup, libmosquitto), Cint, ())
 end

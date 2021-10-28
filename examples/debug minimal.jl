@@ -17,8 +17,13 @@ function loop_start(client::Ptr{Cmosquitto})
     return msg_nr
 end
 
+function loop_forever(client; timeout::Int = 1000, max_packets::Int = 1)
+    return ccall((:mosquitto_loop_forever, libmosquitto), Cint, (Ptr{Cmosquitto}, Cint, Cint), client, timeout, max_packets)
+end
+
+
 function connect_callback_set(client::Ptr{Cmosquitto}, cfunc)
-    msg_nr = ccall((:mosquitto_connect_callback_set, libmosquitto), Cint, (Ptr{Cmosquitto}, Ptr{Cvoid}), client, cfunc)
+    msg_nr = ccall((:mosquitto_connect_callback_set, libmosquitto), Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}), client, cfunc)
     return msg_nr
 end
 
@@ -38,4 +43,4 @@ testclient = mosquitto_new("testclient", true, cobj)
 connect_callback_set(testclient, callback_connect_c)
 
 connect(testclient, "localhost")
-loop_start(testclient) # segfault
+loop_forever(testclient) # segfault
