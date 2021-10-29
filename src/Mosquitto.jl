@@ -4,13 +4,21 @@
 module Mosquitto
 
 import Base.finalizer
-using Random
+using Random, Libdl
 
-const libmosquitto = "libmosquitto.so.1" #/lib/x86_64-linux-gnu/
+# find library
+const libmosquitto = @static if Sys.islinux()
+    Libdl.find_library("libmosquitto.so.1") #/lib/x86_64-linux-gnu/
+elseif Sys.iswindows()
+    Libdl.find_library("mosquitto.dll", [raw"C:\Program Files\Mosquitto"])
+end
 
 function __init__()
+    libmosquitto == "" && throw("Could not find the mosquitto library. If youre sure its installed, try adding it to DL_LOAD_PATH and rebuild the package.")
     mosq_error_code = ccall((:mosquitto_lib_init, libmosquitto), Cint, ()) 
     mosq_error_code != 0 && println("Mosquitto init returned error code $mosq_error_code")
+    v = lib_version()
+    v[1] != 2 || v[2] != 0 && println("Found lib version $(v[1]).$(v[2]), which is different from 2.0. Some functionality might not work")
 end
 
 include("helpers.jl")
