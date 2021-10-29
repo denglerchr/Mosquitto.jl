@@ -48,13 +48,25 @@ subscribe(client, topic)
 ```
 
 ### Complete example
+
+This example scripts will
+1) create a connection to a public broker
+2) subscribes to the topic "jltest"
+3) publish 2 messages to the same topic "jltest"
+4) read and print the messages.
+Note that the script might print 3 messages if a message for that topic is "retained".
+
 ```julia
 using Mosquitto
+
+# 1)
 client = Client("test.mosquitto.org", 1883)
 
+# 2)
 topic = "jltest"
 subscribe(client, topic)
 
+# 3)
 # Send 2 messages, first one will remain in the broker an be received on new connect
 publish(client, topic, "Hi from Julia"; retain = true)
 publish(client, topic, "Another message"; retain = false)
@@ -63,6 +75,7 @@ publish(client, topic, "Another message"; retain = false)
 # or call the loop during that time, to make sure stuff is sent/received
 client.loop_status ? sleep(2) : loop(client; timeout = 200, ntimes = 10)
 
+# 4)
 nmessages = Base.n_avail(Mosquitto.messages_channel)
 for i = 1:nmessages
     msg = take!(Mosquitto.messages_channel) # Tuple{String, Vector{UInt8})
