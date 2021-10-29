@@ -1,5 +1,6 @@
 using Mosquitto
 
+# connect to a broker, also start loop if Threads.nthreads() > 1
 client = Client("localhost")
 
 topic = "test"
