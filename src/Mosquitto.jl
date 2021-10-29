@@ -14,7 +14,7 @@ elseif Sys.iswindows()
 end
 
 function __init__()
-    libmosquitto == "" && throw("Could not find the mosquitto library. If youre sure its installed, try adding it to DL_LOAD_PATH and rebuild the package.")
+    libmosquitto == "" && throw("Could not find the mosquitto library. If you're sure that it's installed, try adding it to DL_LOAD_PATH and rebuild the package.")
     mosq_error_code = ccall((:mosquitto_lib_init, libmosquitto), Cint, ()) 
     mosq_error_code != 0 && println("Mosquitto init returned error code $mosq_error_code")
     v = lib_version()

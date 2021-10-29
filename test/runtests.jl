@@ -18,7 +18,7 @@ end
         # empty channel
         take!(Mosquitto.messages_channel)
     end
-    @test publish(client, topic, message; retain = true) == 0
+    @test publish(client, topic, message; retain = false) == 0
     loop(client)
     sleep(0.1)
     loop(client)
