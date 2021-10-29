@@ -1,19 +1,30 @@
 """
-    loop(client::Client; timeout::Int = 2000)
+    loop(client::Client; timeout::Int = 1000, ntimes::Int = 1)
 
 Perform a network loop. This will get messages of subscriptions and send published messages.
 """
-loop(client::Client; timeout::Int = 2000) =  loop(client.cmosc; timeout = timeout)
+function loop(client::Client; timeout::Int = 1000, ntimes::Int = 1) 
+    out = 0
+    for _ = 1:ntimes
+        out = loop(client.cmosc; timeout = timeout)
+    end
+    return out
+end
 
 
 """
-    loop_start(client::Client)
+    loop_start(client::Client; autoreconnect::Bool = true)
 
 This function keeps calling the network loop until loop_stop is called.
 If only one thread is used, this function will be blocking, else the calls
 will be executed on a worker thread.
 """
 function loop_start(client::Client; autoreconnect::Bool = true)
+    if client.loop_status == true
+        println("Loop is already running")
+        return 1
+    end
+
     if Threads.nthreads()>1
         Threads.@spawn loop_runner(client, autoreconnect)
         client.loop_status = true
@@ -24,6 +35,12 @@ function loop_start(client::Client; autoreconnect::Bool = true)
     return 0
 end
 
+
+"""
+    loop_stop(client::Client)
+
+Stop the network loop.
+"""
 function loop_stop(client::Client)
     if client.loop_status 
         put!(client.loop_channel, 0)

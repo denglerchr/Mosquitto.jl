@@ -38,7 +38,7 @@ end
 
 function publish(client::Ref{Cmosquitto}, topic::String, payload; qos::Int = 1, retain::Bool = true)
     payloadnew = getbytes(payload)
-    payloadlen = sizeof(payloadnew)
+    payloadlen = length(payloadnew) # dont use sizeof, as payloadnew might be of type "reinterpreted"
     mid = Int[0]
     msg_nr = ccall((:mosquitto_publish, libmosquitto), Cint,
     (Ptr{Cmosquitto}, Ptr{Cint}, Cstring, Cint, Ptr{UInt8}, Cint, Bool), 

@@ -3,6 +3,7 @@ import Base.n_avail, Base.show
 # Would prefer to have this per client, but couldnt get it to work with cfunction
 const messages_channel = Channel{Tuple{String, Vector{UInt8}}}(20)
 
+
 mutable struct Client
     id::String
     cmosc::Ref{Cmosquitto}
@@ -22,7 +23,16 @@ function finalizer(client::Client)
     destroy(client.cmosc)
 end
 
-function Client(ip::String, port::Int=1883; keepalive::Int = 5*60, id::String = randstring(15), loop_channel = Channel{Int}(1), startloop::Bool = true)
+
+"""
+    Client(ip::String, port::Int=1883; kwargs...)
+
+Create a client connection to an MQTT broker. Possible key word arguments are:
+* keepalive::Int = 60   Maximal of time the client has to send PINGREQ or a message before disconnection
+* id::String = randstring(15)  The id should be unique per connection.
+* startloop:Bool = true  If true, and Threads.nthreads()>1, the network loop will be executed regularly after connection.
+"""
+function Client(ip::String, port::Int=1883; keepalive::Int = 60, id::String = randstring(15), startloop::Bool = true)
     # Create mosquitto object
     cobj = Ref{Cvoid}()
     cmosc = mosquitto_new(id, true, cobj)
@@ -37,6 +47,7 @@ function Client(ip::String, port::Int=1883; keepalive::Int = 5*60, id::String = 
     message_callback_set(cmosc, cfunc)
 
     # Create object
+    loop_channel = Channel{Int}(1)
     client = Client(id, cmosc, cobj, loop_channel, false)
 
     # Start loop if it can be started without blocking
@@ -57,10 +68,27 @@ end
 
 reconnect(client::Client) = reconnect(client.cmosc)
 
+"""
+    publish(client::Client, topic::String, payload; qos::Int = 1, retain::Bool = true)
+
+Publish a message to the broker.
+"""
 publish(client::Client, topic::String, payload; qos::Int = 1, retain::Bool = true) = publish(client.cmosc, topic, payload; qos = qos, retain = retain)
 
+
+"""
+    subscribe(client::Client, topic::String; qos::Int = 1)
+
+Subscribe to a topic. Received messages will be accessible Mosquitto.messages_channel as a Tuple{String, Vector{Uint8}}.
+"""
 subscribe(client::Client, topic::String; qos::Int = 1) = subscribe(client.cmosc, topic; qos = qos)
 
+
+"""
+    unsubscribe(client::Client, topic::String)
+
+Unsubscribe from a topic.
+"""
 unsubscribe(client::Client, topic::String) = unsubscribe(client.cmosc, topic)
 
 # This callback function puts any message on arrival in the channel

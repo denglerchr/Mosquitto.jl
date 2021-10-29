@@ -1,13 +1,71 @@
 # Mosquitto.jl
 
-A wrapper around the Mosquitto C Api, atleast the client side. Work in progress.
+A wrapper around the Mosquitto C Api. The package provides easy to use MQTT client functionality.
 
+## Package Status
 ### What works
 * connecting to a broker
 * publishing messages
+* subscribing to topics
 
 ### Todos
-* fix callback functions ->segfault currently
-* add username + password authentication
-* Mosquitto into an artifact?
-* add tests
+* add authentication
+
+## Installation
+* Install the mosquitto library
+Follow the instructions at https://mosquitto.org/download/
+* Download the julia package
+`]add https://github.com/denglerchr/Mosquitto.jl`
+
+## Usage
+
+### Connect to a broker
+
+```julia
+using Mosquitto
+client = Client("test.mosquitto.org", 1883)
+```
+
+Create a client using the ip and port of the broker. If you use >1 julia thread, the network loop will start immediately.
+Use ?Mosquitto.Client for information on client settings.
+
+### Publish a message
+```julia
+topic = "test"
+message = "hello world"
+publish(client, topic, message)
+
+# only necessary if network loop isnt running in seprate thread
+!client.loop_status && loop(client)
+```
+
+A message can be of type string, or of a type that can be converted to a Vector{UInt8} using reinterpret. If you do not use multiple threads and *loop_start(client)*, publishing might not happen until you call *loop(client)*.
+
+### Subscribe to a topic
+```julia
+topic = "test"
+subscribe(client, topic)
+```
+
+### Complete example
+```julia
+using Mosquitto
+client = Client("test.mosquitto.org", 1883)
+
+topic = "jltest"
+subscribe(client, topic)
+
+# Send 2 messages, first one will remain in the broker an be received on new connect
+publish(client, topic, "Hi from Julia"; retain = true)
+publish(client, topic, "Another message"; retain = false)
+
+# lets wait to be sure to receive something
+# or call the loop during that time, to make sure stuff is sent/received
+client.loop_status ? sleep(2) : loop(client; timeout = 200, ntimes = 10)
+
+nmessages = Base.n_avail(Mosquitto.messages_channel)
+for i = 1:nmessages
+    msg = take!(Mosquitto.messages_channel) # Tuple{String, Vector{UInt8})
+    println("Topic: $(msg[1])\tMessage: $(String(msg[2]))")
+end
+```
