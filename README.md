@@ -73,7 +73,7 @@ publish(client, topic, "Another message"; retain = false)
 
 # lets wait to be sure to receive something
 # or call the loop during that time, to make sure stuff is sent/received
-client.loop_status ? sleep(2) : loop(client; timeout = 200, ntimes = 10)
+client.loop_status ? sleep(3) : loop(client; timeout = 1000, ntimes = 5)
 
 # 4)
 nmessages = Base.n_avail(Mosquitto.messages_channel)
