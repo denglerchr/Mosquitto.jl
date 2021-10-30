@@ -3,10 +3,11 @@
 
 Perform a network loop. This will get messages of subscriptions and send published messages.
 """
-function loop(client::Client; timeout::Int = 1000, ntimes::Int = 1) 
+function loop(client::Client; timeout::Int = 1000, ntimes::Int = 1, autoreconnect::Bool = true) 
     out = 0
     for _ = 1:ntimes
         out = loop(client.cmosc; timeout = timeout)
+        autoreconnect && out == 4 && reconnect(client)
     end
     return out
 end
@@ -63,8 +64,8 @@ function loop_runner(client::Client, autoreconnect::Bool)
 
         if msg == 4 && autoreconnect
             # case of a disconnect, try reconnecting every 2 seconds
-            reconnect(client.cmosc) != 0 && sleep(2)
             println("Client disconnected, trying to reconnect...")
+            reconnect(client) != 0 && sleep(2)
         elseif msg != 0
             client.loop_status = false
             println("Loop failed with error $msg")
