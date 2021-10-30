@@ -1,4 +1,6 @@
+# Read 20 messages in topic "test/..." from the public broker test.mosquitto.org
 # This example assumes julia was started with >1 thread
+# e.g., julia -t 2 subscribe.jl
 if Threads.nthreads()<2 
     println("Start julia using atleast 2 threads to run this example:")
     println("julia -t 2 subscribe.jl")
@@ -11,7 +13,7 @@ using Mosquitto
 client = Client("test.mosquitto.org", 1883)
 
 # subscribe to topic "test"
-subscribe(client, "test")
+subscribe(client, "test/#")
 
 # Messages will be put as a tuple in
 # the channel Mosquitto.messages_channel.
