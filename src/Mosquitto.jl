@@ -8,7 +8,7 @@ using Random, Libdl
 
 # find library
 const libmosquitto = @static if Sys.isunix()
-    Libdl.find_library("libmosquitto") #/lib/x86_64-linux-gnu/
+    Libdl.find_library("libmosquitto")
 elseif Sys.iswindows()
     Libdl.find_library("mosquitto.dll", [raw"C:\Program Files\Mosquitto"])
 end
