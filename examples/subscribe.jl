@@ -1,8 +1,14 @@
 # This example assumes julia was started with >1 thread
+if Threads.nthreads()<2 
+    println("Start julia using atleast 2 threads to run this example:")
+    println("julia -t 2 subscribe.jl")
+    exit(1)
+end
+
 using Mosquitto
 
 # Connect to a broker, also starts loop if Threads.nthreads()>1
-client = Client("localhost")
+client = Client("test.mosquitto.org", 1883)
 
 # subscribe to topic "test"
 subscribe(client, "test")
