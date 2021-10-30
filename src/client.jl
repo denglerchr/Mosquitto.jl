@@ -61,7 +61,7 @@ function Client(ip::String, port::Int=1883; keepalive::Int = 60, id::String = ra
 end
 
 function disconnect(client::Client)
-    loop_stop(client)
+    client.loop_status && loop_stop(client)
     disconnect(client.cmosc)
     return client
 end
