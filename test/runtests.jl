@@ -27,3 +27,6 @@ end
         @test Array(reinterpret(Int, take!(Mosquitto.messages_channel)[2])) == message
     end
 end
+
+disconnect(client)
+lib_cleanup()
