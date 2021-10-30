@@ -27,7 +27,7 @@ include("cwrapper.jl")
 export lib_version, lib_cleanup
 
 include("client.jl")
-export Client, publish, subscribe, unsubscribe, loop, disconnect, reconnect
+export Client, connect, reconnect, disconnect, publish, subscribe, unsubscribe, loop, tls_set
 
 include("looprunner.jl")
 export loop_start, loop_stop

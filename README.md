@@ -9,9 +9,10 @@ A wrapper around the Mosquitto C Api. The package provides easy to use MQTT clie
 * connecting to a broker
 * publishing messages
 * subscribing to topics
+* authetication using tls and/or username and password
 
 ### Todos
-* add authentication
+* v5 features like properties
 
 ## Installation
 * Install the mosquitto library
@@ -19,7 +20,7 @@ Follow the instructions at https://mosquitto.org/download/
 * Download the julia package
 `]add https://github.com/denglerchr/Mosquitto.jl`
 
-## Usage
+## Basic Usage
 
 ### Connect to a broker
 
