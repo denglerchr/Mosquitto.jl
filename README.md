@@ -9,9 +9,10 @@ A wrapper around the Mosquitto C Api. The package provides easy to use MQTT clie
 * connecting to a broker
 * publishing messages
 * subscribing to topics
+* authetication using tls and/or username and password
 
 ### Todos
-* add authentication
+* v5 features like properties
 
 ## Installation
 * Install the mosquitto library
@@ -19,7 +20,7 @@ Follow the instructions at https://mosquitto.org/download/
 * Download the julia package
 `]add https://github.com/denglerchr/Mosquitto.jl`
 
-## Usage
+## Basic Usage
 
 ### Connect to a broker
 
@@ -90,3 +91,6 @@ Before closing Julia, you should properly clean up the session using
 disconnect(client)
 lib_cleanup()
 ```
+
+## Advanced Usage
+You find examples in the example folder for how to use TLS connections and user/password authetication. Currently bad credentials do not lead to any error or warning, your messages will just not be sent and you will not receive any messages.

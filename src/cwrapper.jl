@@ -98,6 +98,17 @@ function message_callback_set(client::Ref{Cmosquitto}, cfunc)
 end
 
 
+function username_pw_set(client::Ref{Cmosquitto}, username::String, password::String)
+    #password != "" && (password = Cstring(C_NULL))
+    return ccall((:mosquitto_username_pw_set, libmosquitto), Cint, (Ptr{Cmosquitto}, Cstring, Cstring), client, username, password)
+end
+
+
+function tls_set(client::Ref{Cmosquitto}, cafile, capath, certfile, keyfile, callback::Ptr{Cvoid})
+    return ccall((:mosquitto_tls_set, libmosquitto), Cint, (Ptr{Cmosquitto}, Cstring, Cstring, Cstring, Cstring, Ptr{Cvoid}), client, cafile, capath, certfile, keyfile, callback)
+end
+
+
 function lib_version()
     maj = zeros(Int, 1)
     min = zeros(Int, 1)
