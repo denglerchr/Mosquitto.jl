@@ -56,7 +56,6 @@ end
 function loop_runner(client::Client, autoreconnect::Bool)
     while isempty(client.loop_channel)
         msg = copy( loop(client.cmosc) )
-        #println(msg) # bug? makes this behave like it should
 
         if autoreconnect && msg == Cint(4)
             # case of a disconnect, try reconnecting every 2 seconds
