@@ -18,6 +18,5 @@ for i = 1:20
 end
 
 # Close everything
-unsubscribe(client, topic)
 disconnect(client)
 lib_cleanup()
