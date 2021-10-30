@@ -3,6 +3,8 @@
 A wrapper around the Mosquitto C Api. The package provides easy to use MQTT client functionality.
 
 ## Package Status
+* **Linux + Julia v1.6.3** has trouble when using multiple threads. You need to upgrade to 1.7 or use single thread with manual "loop" calls for that specific configuration.
+
 ### What works
 * connecting to a broker
 * publishing messages
@@ -81,4 +83,10 @@ for i = 1:nmessages
     msg = take!(Mosquitto.messages_channel) # Tuple{String, Vector{UInt8})
     println("Topic: $(msg[1])\tMessage: $(String(msg[2]))")
 end
+```
+
+Before closing Julia, you should properly clean up the session using
+```julia
+disconnect(client)
+lib_cleanup()
 ```
