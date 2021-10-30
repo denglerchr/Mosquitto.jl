@@ -7,8 +7,8 @@ import Base.finalizer
 using Random, Libdl
 
 # find library
-const libmosquitto = @static if Sys.islinux()
-    Libdl.find_library("libmosquitto.so.1") #/lib/x86_64-linux-gnu/
+const libmosquitto = @static if Sys.isunix()
+    Libdl.find_library("libmosquitto") #/lib/x86_64-linux-gnu/
 elseif Sys.iswindows()
     Libdl.find_library("mosquitto.dll", [raw"C:\Program Files\Mosquitto"])
 end
@@ -24,7 +24,7 @@ end
 include("helpers.jl")
 
 include("cwrapper.jl")
-export lib_version
+export lib_version, lib_cleanup
 
 include("client.jl")
 export Client, publish, subscribe, unsubscribe, loop, disconnect, reconnect
