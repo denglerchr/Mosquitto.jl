@@ -6,7 +6,7 @@ include("authfiles/certpaths.jl")
 # Create client, but dont connect yet
 client = Client("", 0; connectme = false)
 
-# Configure tls using the ca certificate
+# Configure tls using the ca certificate, needs to be done before connecting
 tls_set(client, cafile)
 
 # Connect using username and password

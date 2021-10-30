@@ -6,7 +6,7 @@ include("authfiles/certpaths.jl")
 # Create client, but dont connect yet
 client = Client("", 0; connectme = false)
 
-# Configure tls by providing crt and key files
+# Configure tls by providing crt and key files, needs to be done before connecting
 tls_set(client, cafile; certfile = certfile, keyfile = keyfile)
 
 # Connect

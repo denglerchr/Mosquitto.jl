@@ -91,3 +91,6 @@ Before closing Julia, you should properly clean up the session using
 disconnect(client)
 lib_cleanup()
 ```
+
+## Advanced Usage
+You find examples in the example folder for how to use TLS connections and user/password authetication. Currently bad credentials do not lead to any error or warning, your messages will just not be sent and you will not receive any messages.

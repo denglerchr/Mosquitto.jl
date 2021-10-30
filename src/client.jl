@@ -30,8 +30,8 @@ end
 
 Create a client connection to an MQTT broker. Possible key word arguments are:
 * id::String = randstring(15)  The id should be unique per connection.
-* startloop::Bool = true  If true, and Threads.nthreads()>1, the network loop will be executed regularly after connection.
 * connectme::Bool = true  Connect immediately if true. If false, you need to manually use *connect(client, ip, port)* and input arguments are not used.
+* startloop::Bool = true  If true, and Threads.nthreads()>1, the network loop will be executed regularly after connection.
 """
 function Client(ip::String, port::Int=1883; id::String = randstring(15), connectme::Bool = true, startloop::Bool = true)
     # Create mosquitto object
@@ -68,6 +68,8 @@ end
     connect(client::Client, ip::String, port::Int; kwargs...)
 
 Connect the client to a broker. kwargs are:
+* username::String = ""      A username, should one be required
+* password::String = ""      A password belonging to the username
 * keepalive::Int = 60   Maximal of time the client has to send PINGREQ or a message before disconnection
 """
 function connect(client::Client, ip::String, port::Int; username::String = "", password::String = "", keepalive::Int = 60)
