@@ -22,7 +22,7 @@ for i = 1:20
     temp = take!(Mosquitto.messages_channel)
     # Do something with the message
     println("Message $i of 20:")
-    println("\ttopic: $(temp[1])\tmessage:$(String(temp[2]))")
+    println("\ttopic: $(temp.topic)\tmessage:$(String(temp.payload))")
 end
 
 # Close everything

@@ -20,7 +20,7 @@ client.loop_status ? sleep(1) : loop(client; ntimes = 10)
 nmessages = Base.n_avail(Mosquitto.messages_channel)
 for i = 1:nmessages
     msg = take!(Mosquitto.messages_channel) # Tuple{String, Vector{UInt8})
-    println("Topic: $(msg[1])\tMessage: $(String(msg[2]))")
+    println("Topic: $(msg.topic)\tMessage: $(String(msg.payload))")
 end
 
 disconnect(client)

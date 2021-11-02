@@ -1,8 +1,5 @@
 import Base.n_avail, Base.show
 
-# Would prefer to have this per client, but couldnt get it to work with cfunction
-const messages_channel = Channel{Tuple{String, Vector{UInt8}}}(20)
-
 
 mutable struct Client
     id::String
@@ -39,9 +36,17 @@ function Client(ip::String, port::Int=1883; id::String = randstring(15), connect
     cmosc = mosquitto_new(id, true, cobj)
 
     # Set callbacks
-    #f_callback(mos, obj, message) = callback_message(mos, obj, message, channel)
-    cfunc = @cfunction($callback_message, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Ptr{CMosquittoMessage}))
-    message_callback_set(cmosc, cfunc)
+    #f_message_cb(mos, obj, message) = callback_message(mos, obj, message, id)
+    cfunc_message = @cfunction(callback_message, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Ptr{CMosquittoMessage}))
+    message_callback_set(cmosc, cfunc_message)
+
+    #f_connect_cb(mos, obj, rc) = callback_connect(mos, obj, rc, id)
+    cfunc_connect = @cfunction(callback_connect, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Cint))
+    connect_callback_set(cmosc, cfunc_connect)
+
+    #f_disconnect_cb(mos, obj, rc) = callback_disconnect(mos, obj, rc, id)
+    cfunc_disconnect = @cfunction(callback_disconnect, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Cint))
+    disconnect_callback_set(cmosc, cfunc_disconnect)
 
     # Create object
     loop_channel = Channel{Int}(1)
@@ -138,22 +143,4 @@ function tls_set(client::Client, cafile::String; certfile::String = "", keyfile:
     else
         return tls_set(client.cmosc, cafile, C_NULL, certfile, keyfile, C_NULL)
     end
-end
-
-
-# This callback function puts any message on arrival in the channel
-# messages_channel which is a Channel{Tuple{String, Vector{UInt8}}}(20)
-function callback_message(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, message::Ptr{CMosquittoMessage})
-    # get topic and payload from the message
-    jlmessage = unsafe_load(message)
-    jlpayload = [unsafe_load(jlmessage.payload, i) for i = 1:jlmessage.payloadlen]
-    topic = unsafe_string(jlmessage.topic)
-
-    # put it in the channel for further use
-    if Base.n_avail(messages_channel)>=messages_channel.sz_max
-        take!(messages_channel)
-    end
-    put!(messages_channel, (topic, jlpayload))
-    
-    return nothing
 end
