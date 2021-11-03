@@ -1,13 +1,25 @@
 import Base.n_avail, Base.show
 
 
-mutable struct Client
-    id::String
-    cmosc::Ref{Cmosquitto}
-    cobj::Ref{Cvoid}
-    loop_channel::AbstractChannel{Int}
-    loop_status::Bool
+struct Cobjs
+    mosc::Ref{Cmosquitto}
+    obj::Ref{Cvoid}
+    conncb::Ref{Cvoid}
+    dconncb::Ref{Cvoid}
+end
+
+
+mutable struct ClStatus
     conn_status::Bool
+    loop_status::Bool
+end
+
+
+struct Client
+    id::String
+    cptr::Cobjs
+    loop_channel::AbstractChannel{Int}
+    status::ClStatus
 end
 
 
@@ -18,7 +30,7 @@ end
 
 function finalizer(client::Client)
     disconnect(client)
-    destroy(client.cmosc)
+    destroy(client.cptr.mosc)
 end
 
 
@@ -40,17 +52,17 @@ function Client(ip::String, port::Int=1883; id::String = randstring(15), connect
     cfunc_message = @cfunction(callback_message, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Ptr{CMosquittoMessage}))
     message_callback_set(cmosc, cfunc_message)
 
-    #f_connect_cb(mos, obj, rc) = callback_connect(mos, obj, rc, id)
-    cfunc_connect = @cfunction(callback_connect, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Cint))
+    f_connect_cb(mos, obj, rc) = callback_connect(mos, obj, rc, id)
+    cfunc_connect = @cfunction($f_connect_cb, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Cint))
     connect_callback_set(cmosc, cfunc_connect)
 
-    #f_disconnect_cb(mos, obj, rc) = callback_disconnect(mos, obj, rc, id)
-    cfunc_disconnect = @cfunction(callback_disconnect, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Cint))
+    f_disconnect_cb(mos, obj, rc) = callback_disconnect(mos, obj, rc, id)
+    cfunc_disconnect = @cfunction($f_disconnect_cb, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Cint))
     disconnect_callback_set(cmosc, cfunc_disconnect)
 
     # Create object
     loop_channel = Channel{Int}(1)
-    client = Client(id, cmosc, cobj, loop_channel, false, false)
+    client = Client(id, Cobjs(cmosc, cobj, cfunc_connect, cfunc_disconnect), loop_channel, ClStatus(false, false) )
 
     # Possibly Connect to broker
     if connectme
@@ -79,11 +91,11 @@ Connect the client to a broker. kwargs are:
 """
 function connect(client::Client, ip::String, port::Int; username::String = "", password::String = "", keepalive::Int = 60)
     if username != ""
-        flag = username_pw_set(client.cmosc, username, password)
+        flag = username_pw_set(client.cptr.mosc, username, password)
         flag != 0 && println("Couldnt set password and username, error $flag")
     end
-    flag = connect(client.cmosc, ip; port = port, keepalive = keepalive)
-    flag == 0 ? (client.conn_status = true) : println("Connection to broker failed")
+    flag = connect(client.cptr.mosc, ip; port = port, keepalive = keepalive)
+    flag == 0 ? (client.status.conn_status = true) : println("Connection to broker failed")
     return flag
 end
 
@@ -92,9 +104,9 @@ end
     disconnect(client::Client)
 """
 function disconnect(client::Client)
-    client.loop_status && loop_stop(client)
-    flag = disconnect(client.cmosc)
-    flag == 0 && (client.conn_status = false)
+    client.status.loop_status && loop_stop(client)
+    flag = disconnect(client.cptr.mosc)
+    flag == 0 && (client.status.conn_status = false)
     return flag
 end
 
@@ -103,8 +115,8 @@ end
     reconnect(client::Client)
 """
 function reconnect(client::Client)
-    flag = reconnect(client.cmosc)
-    flag == 0 && (client.conn_status = true)
+    flag = reconnect(client.cptr.mosc)
+    flag == 0 && (client.status.conn_status = true)
     return flag
 end
 
@@ -114,7 +126,7 @@ end
 
 Publish a message to the broker.
 """
-publish(client::Client, topic::String, payload; qos::Int = 1, retain::Bool = true) = publish(client.cmosc, topic, payload; qos = qos, retain = retain)
+publish(client::Client, topic::String, payload; qos::Int = 1, retain::Bool = true) = publish(client.cptr.mosc, topic, payload; qos = qos, retain = retain)
 
 
 """
@@ -122,7 +134,7 @@ publish(client::Client, topic::String, payload; qos::Int = 1, retain::Bool = tru
 
 Subscribe to a topic. Received messages will be accessible Mosquitto.messages_channel as a Tuple{String, Vector{Uint8}}.
 """
-subscribe(client::Client, topic::String; qos::Int = 1) = subscribe(client.cmosc, topic; qos = qos)
+subscribe(client::Client, topic::String; qos::Int = 1) = subscribe(client.cptr.mosc, topic; qos = qos)
 
 
 """
@@ -130,7 +142,7 @@ subscribe(client::Client, topic::String; qos::Int = 1) = subscribe(client.cmosc,
 
 Unsubscribe from a topic.
 """
-unsubscribe(client::Client, topic::String) = unsubscribe(client.cmosc, topic)
+unsubscribe(client::Client, topic::String) = unsubscribe(client.cptr.mosc, topic)
 
 
 """
@@ -139,8 +151,8 @@ unsubscribe(client::Client, topic::String) = unsubscribe(client.cmosc, topic)
 function tls_set(client::Client, cafile::String; certfile::String = "", keyfile::String = "")
     xor( certfile == "", keyfile == "" ) && throw("You need to either provide both cert and key files, or none of both")
     if certfile == ""
-        return tls_set(client.cmosc, cafile, C_NULL, C_NULL, C_NULL, C_NULL)
+        return tls_set(client.cptr.cmosc, cafile, C_NULL, C_NULL, C_NULL, C_NULL)
     else
-        return tls_set(client.cmosc, cafile, C_NULL, certfile, keyfile, C_NULL)
+        return tls_set(client.cptr.cmosc, cafile, C_NULL, certfile, keyfile, C_NULL)
     end
 end

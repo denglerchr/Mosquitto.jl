@@ -17,10 +17,10 @@ function subonconnect()
     while true
         conncb = take!(get_connect_channel())
         if conncb.val == 1
-            println("Connection successfull, subscribing to test/#")
+            println("Connection of client $(conncb.clientid) successfull, subscribing to test/#")
             subscribe(client, "test/#")
         elseif conncb.val == 0
-            println("Disconnected")
+            println("Client $(conncb.clientid) disconnected")
         else
             println("Subonconnect function returning")
             return 0
@@ -40,6 +40,6 @@ for i = 1:20
 end
 
 # Close everything
-put!(Mosquitto.connect_channel, ConnectionCB(UInt8(255), 0))
+put!(Mosquitto.connect_channel, Mosquitto.ConnectionCB("", UInt8(255), 0))
 disconnect(client)
 lib_cleanup()

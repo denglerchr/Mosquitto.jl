@@ -13,7 +13,7 @@ struct MessageCB
 end
 
 struct ConnectionCB
-    #clientid::String
+    clientid::String
     val::UInt8
     returncode::Cint
 end
@@ -42,19 +42,19 @@ function callback_message(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, message::Ptr{CM
 end
 
 
-function callback_connect(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, rc::Cint)
+function callback_connect(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, rc::Cint, id::String)
     if Base.n_avail(connect_channel)>=connect_channel.sz_max
         take!(connect_channel)
     end
-    put!( connect_channel, ConnectionCB( one(UInt8), rc ) )
+    put!( connect_channel, ConnectionCB(id, one(UInt8), rc ) )
     return nothing
 end
 
 
-function callback_disconnect(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, rc::Cint)
+function callback_disconnect(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, rc::Cint, id::String)
     if Base.n_avail(connect_channel)>=connect_channel.sz_max
         take!(connect_channel)
     end
-    put!( connect_channel, ConnectionCB( zero(UInt8), rc ) )
+    put!( connect_channel, ConnectionCB(id, zero(UInt8), rc ) )
     return nothing
 end
