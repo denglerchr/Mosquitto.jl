@@ -9,7 +9,7 @@ struct Cobjs
 end
 
 
-mutable struct ClStatus
+mutable struct MoscStatus
     conn_status::Bool
     loop_status::Bool
 end
@@ -19,7 +19,7 @@ struct Client
     id::String
     cptr::Cobjs
     loop_channel::AbstractChannel{Int}
-    status::ClStatus
+    status::MoscStatus
 end
 
 
@@ -62,7 +62,7 @@ function Client(ip::String, port::Int=1883; id::String = randstring(15), connect
 
     # Create object
     loop_channel = Channel{Int}(1)
-    client = Client(id, Cobjs(cmosc, cobj, cfunc_connect, cfunc_disconnect), loop_channel, ClStatus(false, false) )
+    client = Client(id, Cobjs(cmosc, cobj, cfunc_connect, cfunc_disconnect), loop_channel, MoscStatus(false, false) )
 
     # Possibly Connect to broker
     if connectme
