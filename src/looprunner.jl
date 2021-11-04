@@ -7,7 +7,10 @@ function loop(client::Client; timeout::Int = 1000, ntimes::Int = 1, autoreconnec
     out = zero(Cint)
     for _ = 1:ntimes
         out = loop(client.cptr.mosc; timeout = timeout)
-        autoreconnect && out == 4 && reconnect(client)
+        if autoreconnect && out == 4
+            flag = reconnect(client)
+            client.status.conn_status = ifelse( flag == 0, true, false )  
+        end
     end
     return out
 end

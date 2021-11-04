@@ -7,7 +7,6 @@ struct Message with fields
 A struct containing incoming message information and payload.
 """
 struct MessageCB
-    #clientid::String
     topic::String
     payload::Vector{UInt8}
 end

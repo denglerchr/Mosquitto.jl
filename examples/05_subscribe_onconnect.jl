@@ -13,12 +13,12 @@ using Mosquitto
 client = Client("test.mosquitto.org", 1883)
 
 # subscribe to topic "test"
-function subonconnect()
+function subonconnect(c)
     while true
         conncb = take!(get_connect_channel())
         if conncb.val == 1
             println("Connection of client $(conncb.clientid) successfull, subscribing to test/#")
-            subscribe(client, "test/#")
+            subscribe(c, "test/#")
         elseif conncb.val == 0
             println("Client $(conncb.clientid) disconnected")
         else
@@ -27,7 +27,7 @@ function subonconnect()
         end
     end
 end
-Threads.@spawn subonconnect()
+Threads.@spawn subonconnect(client)
 
 # Messages will be put as a tuple in
 # the channel Mosquitto.messages_channel.

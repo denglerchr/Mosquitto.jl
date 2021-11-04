@@ -41,8 +41,32 @@ Create a client connection to an MQTT broker. Possible key word arguments are:
 * id::String = randstring(15)  The id should be unique per connection.
 * connectme::Bool = true  Connect immediately if true. If false, you need to manually use *connect(client, ip, port)* and input arguments are not used.
 * startloop::Bool = true  If true, and Threads.nthreads()>1, the network loop will be executed regularly after connection.
+
+    Client( ; id::String = randstring(15))
+
+Create a client structure without connecting to a broker or starting a network loop. 
 """
 function Client(ip::String, port::Int=1883; id::String = randstring(15), connectme::Bool = true, startloop::Bool = true)
+    # Create a Client object
+    client = Client( ; id = id )
+
+    # Possibly Connect to broker
+    if connectme
+        flag = connect(client, ip, port)
+        flag != 0 && println("Connection to the broker failed")
+
+        # Start loop if it can be started without blocking
+        if flag == 0 && startloop && Threads.nthreads()>1
+            loop_start(client)
+        elseif startloop
+            println("Single thread, loop will be blocking, start it manually using loop_start(::Client) or call loop(client) regularly.")
+        end
+    end
+
+    return client
+end
+
+function Client(; id::String = randstring(15))
     # Create mosquitto object
     cobj = Ref{Cvoid}()
     cmosc = mosquitto_new(id, true, cobj)
@@ -62,22 +86,7 @@ function Client(ip::String, port::Int=1883; id::String = randstring(15), connect
 
     # Create object
     loop_channel = Channel{Int}(1)
-    client = Client(id, Cobjs(cmosc, cobj, cfunc_connect, cfunc_disconnect), loop_channel, MoscStatus(false, false) )
-
-    # Possibly Connect to broker
-    if connectme
-        flag = connect(client, ip, port)
-        flag != 0 && println("Connection to the broker failed")
-
-        # Start loop if it can be started without blocking
-        if flag == 0 && startloop && Threads.nthreads()>1
-            loop_start(client)
-        elseif startloop
-            println("Single thread, loop will be blocking, start it manually using loop_start(::Client) or call loop(client) regularly.")
-        end
-    end
-
-    return client
+    return Client(id, Cobjs(cmosc, cobj, cfunc_connect, cfunc_disconnect), loop_channel, MoscStatus(false, false) )
 end
 
 
