@@ -15,14 +15,14 @@ client = Client("test.mosquitto.org", 1883)
 # subscribe to topic "test"
 subscribe(client, "test/#")
 
-# Messages will be put as a tuple in
+# Messages will be put in
 # the channel Mosquitto.messages_channel.
 for i = 1:20
     # Take the message on arrival
     temp = take!(Mosquitto.messages_channel)
     # Do something with the message
     println("Message $i of 20:")
-    println("\ttopic: $(temp[1])\tmessage:$(String(temp[2]))")
+    println("\ttopic: $(temp.topic)\tmessage:$(String(temp.payload))")
 end
 
 # Close everything

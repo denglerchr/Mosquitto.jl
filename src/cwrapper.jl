@@ -92,6 +92,11 @@ function connect_callback_set(client::Ref{Cmosquitto}, cfunc)
 end
 
 
+function disconnect_callback_set(client::Ref{Cmosquitto}, cfunc)
+    return ccall((:mosquitto_disconnect_callback_set, libmosquitto), Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}), client, cfunc)
+end
+
+
 function message_callback_set(client::Ref{Cmosquitto}, cfunc)
     ccall((:mosquitto_message_callback_set, libmosquitto), Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}), client, cfunc)
     return nothing
