@@ -1,21 +1,21 @@
 using Mosquitto
 
-# import paths to the server ca file (can be downloaded from https://test.mosquitto.org/ )
+# defined paths to cafile, certfile, keyfile
 include("authfiles/certpaths.jl")
 
 # Create client, but dont connect yet
 client = Client()
 
-# Configure tls using the ca certificate, needs to be done before connecting
-tls_set(client, cafile)
+# Configure tls by providing crt and key files, needs to be done before connecting
+tls_set(client, cafile; certfile = certfile, keyfile = keyfile)
 
-# Connect using username and password
-connect(client, "test.mosquitto.org", 8885; username = "rw", password = "readwrite")
+# Connect
+connect(client, "test.mosquitto.org", 8884)
 
 # Rest as usual, subscribe and publish and read messages
 subscribe(client, "test")
 publish(client, "test/julia", "hello"; retain = false)
-client.loop_status ? sleep(1) : loop(client; ntimes = 10)
+client.status.loop_status ? sleep(1) : loop(client; ntimes = 10)
 
 nmessages = Base.n_avail(Mosquitto.messages_channel)
 for i = 1:nmessages

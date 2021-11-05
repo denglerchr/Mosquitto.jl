@@ -6,8 +6,8 @@ message = [1, 2, 3]
 client = Client("test.mosquitto.org", 1883)
 
 @testset "General" begin
-    Threads.nthreads()>1 && @test client.loop_status == 1
-    Threads.nthreads()==1 && @test client.loop_status == 0
+    Threads.nthreads()>1 && @test client.status.loop_status == 1
+    Threads.nthreads()==1 && @test client.status.loop_status == 0
     @test loop_stop(client) == 0
 end
 
@@ -19,11 +19,10 @@ end
         take!(Mosquitto.messages_channel)
     end
     @test publish(client, topic, message; retain = false) == 0
-    loop(client, ntimes = 5)
-    loop(client; ntimes = 2, timeout = 5000)
+    loop(client, ntimes = 10)
     @test Base.n_avail(Mosquitto.messages_channel) == 1
     if Base.n_avail(Mosquitto.messages_channel) >= 1
-        @test Array(reinterpret(Int, take!(Mosquitto.messages_channel)[2])) == message
+        @test Array(reinterpret(Int, take!(Mosquitto.messages_channel).payload)) == message
     end
     @test disconnect(client) == 0
 end
@@ -44,7 +43,7 @@ client = Client("", 0; connectme = false)
     loop(client; ntimes = 2, timeout = 5000)
     @test Base.n_avail(Mosquitto.messages_channel) == 1
     if Base.n_avail(Mosquitto.messages_channel) >= 1
-        @test Array(reinterpret(Int, take!(Mosquitto.messages_channel)[2])) == message
+        @test Array(reinterpret(Int, take!(Mosquitto.messages_channel).payload)) == message
     end
     @test disconnect(client) == 0
 end

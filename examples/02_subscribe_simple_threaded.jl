@@ -13,33 +13,18 @@ using Mosquitto
 client = Client("test.mosquitto.org", 1883)
 
 # subscribe to topic "test"
-function subonconnect(c)
-    while true
-        conncb = take!(get_connect_channel())
-        if conncb.val == 1
-            println("Connection of client $(conncb.clientid) successfull, subscribing to test/#")
-            subscribe(c, "test/#")
-        elseif conncb.val == 0
-            println("Client $(conncb.clientid) disconnected")
-        else
-            println("Subonconnect function returning")
-            return 0
-        end
-    end
-end
-Threads.@spawn subonconnect(client)
+subscribe(client, "test/#")
 
-# Messages will be put as a tuple in
+# Messages will be put in
 # the channel Mosquitto.messages_channel.
 for i = 1:20
     # Take the message on arrival
-    temp = take!(get_messages_channel())
+    temp = take!(Mosquitto.messages_channel)
     # Do something with the message
     println("Message $i of 20:")
     println("\ttopic: $(temp.topic)\tmessage:$(String(temp.payload))")
 end
 
 # Close everything
-put!(Mosquitto.connect_channel, Mosquitto.ConnectionCB("", UInt8(255), 0))
 disconnect(client)
 lib_cleanup()

@@ -160,8 +160,8 @@ unsubscribe(client::Client, topic::String) = unsubscribe(client.cptr.mosc, topic
 function tls_set(client::Client, cafile::String; certfile::String = "", keyfile::String = "")
     xor( certfile == "", keyfile == "" ) && throw("You need to either provide both cert and key files, or none of both")
     if certfile == ""
-        return tls_set(client.cptr.cmosc, cafile, C_NULL, C_NULL, C_NULL, C_NULL)
+        return tls_set(client.cptr.mosc, cafile, C_NULL, C_NULL, C_NULL, C_NULL)
     else
-        return tls_set(client.cptr.cmosc, cafile, C_NULL, certfile, keyfile, C_NULL)
+        return tls_set(client.cptr.mosc, cafile, C_NULL, certfile, keyfile, C_NULL)
     end
 end
