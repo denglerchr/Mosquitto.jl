@@ -51,7 +51,7 @@ subscribe(client, topic)
 ```
 The subscription will vanish on disonnect. To automatically reconnect, you should subscribe after a connection was detected. Please look at the example *examples/03_subscribe_conconnect.jl* 
 
-### Complete example
+### Simple example
 
 This example scripts will
 1) create a connection to a public broker
@@ -116,7 +116,7 @@ using Mosquitto
 
 # Connect to a broker using tls and username/password authetication.
 # The CA certificate can be downloaded from the mosquitto page https://test.mosquitto.org/ssl/mosquitto.org.crt
-# The connect function will not start a network loop in parallel, loop is triggered automatically later.
+# The connect function will not start a network loop in parallel, loop is triggered manually later.
 client = Client()
 const cafilepath = ... # add path to ca certificate here
 tls_set(client, cafilepath)
