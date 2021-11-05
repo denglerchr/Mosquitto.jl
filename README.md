@@ -111,7 +111,7 @@ You find examples in the example folder for how to use TLS connections and user/
 
 ```julia
 # Read 20 messages in topic "test/..." from the public broker test.mosquitto.org
-# Different from example 02, the client will resubscribe to its topic every time it connects to the broker
+# Different from the previous example, the client will resubscribe to its topic every time it connects to the broker
 using Mosquitto
 
 # Connect to a broker using tls and username/password authetication.
