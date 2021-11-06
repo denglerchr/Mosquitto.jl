@@ -12,16 +12,17 @@ end
 
 """
 struct ConnectionCB with fields
-* clientid::String
+* clientptr::Ptr
 * val::UInt8
 * returncode::Cint
 
-The clientid contains the id of the client that connected or disconnected.
+The clientptr contains the ptr of the client that connected or disconnected.
+This allows to distinguish between clients.
 val is 0 on disconnect and 1 on connect.
 returncode is the MQTT return code which can be used to identify, e.g., the reason for a disconnect.
 """
 struct ConnectionCB
-    clientid::String
+    clientptr::Ptr{Cmosquitto}
     val::UInt8
     returncode::Cint
 end
@@ -65,19 +66,19 @@ function callback_message(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, message::Ptr{CM
 end
 
 
-function callback_connect(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, rc::Cint, id::String)
+function callback_connect(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, rc::Cint)
     if Base.n_avail(connect_channel)>=connect_channel.sz_max
         take!(connect_channel)
     end
-    put!( connect_channel, ConnectionCB(id, one(UInt8), rc ) )
+    put!( connect_channel, ConnectionCB(mos, one(UInt8), rc ) )
     return nothing
 end
 
 
-function callback_disconnect(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, rc::Cint, id::String)
+function callback_disconnect(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, rc::Cint)
     if Base.n_avail(connect_channel)>=connect_channel.sz_max
         take!(connect_channel)
     end
-    put!( connect_channel, ConnectionCB(id, zero(UInt8), rc ) )
+    put!( connect_channel, ConnectionCB(mos, zero(UInt8), rc ) )
     return nothing
 end
