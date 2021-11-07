@@ -19,11 +19,11 @@ function subonconnect(c1::Client, c2::Client, c3::Client)
     for i = 1:nmessages
         conncb = take!(get_connect_channel())
         if conncb.val == 1
-            println("$(conncb.clientid): connection successfull")
-            conncb.clientid == c1.id && subscribe(c1, "test/#")
-            conncb.clientid == c3.id && subscribe(c3, "julia")
+            println("$(conncb.clientptr): connection successfull")
+            conncb.clientptr == c1.cptr.mosc && subscribe(c1, "test/#")
+            conncb.clientptr == c3.cptr.mosc && subscribe(c3, "julia")
         elseif conncb.val == 0
-            println("$(conncb.clientid): disconnected")
+            println("$(conncb.clientptr): disconnected")
         end
     end
     return 0

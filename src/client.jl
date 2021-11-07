@@ -76,12 +76,10 @@ function Client(; id::String = randstring(15))
     cfunc_message = @cfunction(callback_message, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Ptr{CMosquittoMessage}))
     message_callback_set(cmosc, cfunc_message)
 
-    f_connect_cb(mos, obj, rc) = callback_connect(mos, obj, rc, id)
-    cfunc_connect = @cfunction($f_connect_cb, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Cint))
+    cfunc_connect = @cfunction(callback_connect, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Cint))
     connect_callback_set(cmosc, cfunc_connect)
 
-    f_disconnect_cb(mos, obj, rc) = callback_disconnect(mos, obj, rc, id)
-    cfunc_disconnect = @cfunction($f_disconnect_cb, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Cint))
+    cfunc_disconnect = @cfunction(callback_disconnect, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Cint))
     disconnect_callback_set(cmosc, cfunc_disconnect)
 
     # Create object
