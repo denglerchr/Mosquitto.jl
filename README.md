@@ -4,15 +4,7 @@ A wrapper around the Mosquitto C Api. The package provides easy to use MQTT clie
 
 ## Package Status
 * **Linux + Julia v1.6.x** has trouble when using multiple threads. You need to upgrade to 1.7 or use single thread with manual "loop" calls for that specific configuration.
-
-### What works
-* connecting to a broker
-* publishing messages
-* subscribing to topics
-* authetication using tls and/or username and password
-
-### Todos
-* v5 features like properties
+MQTT v5 features like properties are not yet implemented. If you have the need for those, feel free to add an request on Github.
 
 ## Installation
 * Install the mosquitto library
