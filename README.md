@@ -79,12 +79,6 @@ for i = 1:nmessages
 end
 ```
 
-Before closing Julia, you should properly clean up the session using
-```julia
-disconnect(client)
-lib_cleanup()
-```
-
 ## Advanced Usage and Notes
 
 ### Callbacks on messages or connection/disconnection
@@ -165,7 +159,6 @@ while mrcount < 20
     mrcount += onmessage(mrcount) # check for messages
 end
 
-# Close everything
+# Disconnect the client everything
 disconnect(client)
-lib_cleanup()
 ```

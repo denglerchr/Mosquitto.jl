@@ -9,4 +9,3 @@ publish(client, topic, message; retain = true)
 !client.status.loop_status && loop(client; ntimes = 2)
 
 disconnect(client)
-lib_cleanup()

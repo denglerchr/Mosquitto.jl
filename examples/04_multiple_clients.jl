@@ -66,4 +66,3 @@ end
 disconnect(client1)
 disconnect(client2)
 disconnect(client3)
-lib_cleanup()

@@ -45,4 +45,3 @@ end
 # Close everything
 put!(Mosquitto.connect_channel, Mosquitto.ConnectionCB(Ptr{Mosquitto.Cmosquitto}(C_NULL), UInt8(255), 0))
 disconnect(client)
-lib_cleanup()

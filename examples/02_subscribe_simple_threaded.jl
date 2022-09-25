@@ -27,4 +27,3 @@ end
 
 # Close everything
 disconnect(client)
-lib_cleanup()

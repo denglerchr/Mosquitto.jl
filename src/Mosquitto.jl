@@ -19,12 +19,13 @@ function __init__()
     mosq_error_code != 0 && println("Mosquitto init returned error code $mosq_error_code")
     v = lib_version()
     v[1] != 2 || v[2] != 0 && println("Found lib version $(v[1]).$(v[2]), which is different from 2.0. Some functionality might not work")
+    atexit(lib_cleanup)
 end
 
 include("helpers.jl")
 
 include("cwrapper.jl")
-export lib_version, lib_cleanup
+export lib_version
 
 include("callbacks.jl")
 export get_messages_channel, get_connect_channel

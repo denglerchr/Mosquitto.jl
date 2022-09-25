@@ -47,5 +47,3 @@ client = Client("", 0; connectme = false)
     end
     @test disconnect(client) == 0
 end
-
-lib_cleanup()

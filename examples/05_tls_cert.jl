@@ -24,4 +24,3 @@ for i = 1:nmessages
 end
 
 disconnect(client)
-lib_cleanup()
