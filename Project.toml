@@ -1,7 +1,7 @@
 name = "Mosquitto"
 uuid = "db317de6-444b-4dfa-9d0e-fbf3d8dd78ea"
 authors = ["Christian Dengler <sumo_spider@yahoo.de>"]
-version = "0.4.0"
+version = "0.4.1"
 
 [deps]
 Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"

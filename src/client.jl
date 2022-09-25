@@ -163,3 +163,11 @@ function tls_set(client::Client, cafile::String; certfile::String = "", keyfile:
         return tls_set(client.cptr.mosc, cafile, C_NULL, certfile, keyfile, C_NULL)
     end
 end
+
+
+"""
+    tls_plk_set(client::Client, psk::String, identity::String, ciphers::Union{Nothing, String})
+"""
+function tls_psk_set(client::Client, psk::String, identity::String, ciphers::Union{Nothing, String} = nothing)
+    return tls_psk_set(client.cptr.mosc, psk, identity, ciphers)    
+end

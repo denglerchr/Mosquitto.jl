@@ -31,7 +31,7 @@ include("callbacks.jl")
 export get_messages_channel, get_connect_channel
 
 include("client.jl")
-export Client, connect, reconnect, disconnect, publish, subscribe, unsubscribe, loop, tls_set
+export Client, connect, reconnect, disconnect, publish, subscribe, unsubscribe, loop, tls_set, tls_psk_set
 
 include("looprunner.jl")
 export loop_start, loop_stop

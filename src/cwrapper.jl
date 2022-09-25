@@ -114,6 +114,15 @@ function tls_set(client::Ref{Cmosquitto}, cafile, capath, certfile, keyfile, cal
 end
 
 
+function tls_psk_set(client::Ref{Cmosquitto}, psk::String, identity::String, ciphers::Nothing)
+    return ccall((:mosquitto_tls_psk_set, libmosquitto), Cint, (Ptr{Cmosquitto}, Cstring, Cstring, Cstring), client, psk, identity, C_NULL)
+end
+
+function tls_psk_set(client::Ref{Cmosquitto}, psk::String, identity::String, ciphers::String)
+    return ccall((:mosquitto_tls_psk_set, libmosquitto), Cint, (Ptr{Cmosquitto}, Cstring, Cstring, Cstring), client, psk, identity, ciphers)
+end
+
+
 function lib_version()
     maj = zeros(Int, 1)
     min = zeros(Int, 1)
