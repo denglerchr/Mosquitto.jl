@@ -7,10 +7,9 @@ A wrapper around the Mosquitto C Api. The package provides easy to use MQTT clie
 MQTT v5 features like properties are not yet implemented. If you have the need for those, feel free to add an request on Github.
 
 ## Installation
-* Install the mosquitto library
-Follow the instructions at https://mosquitto.org/download/
-* Download the julia package
+Download the julia package by typing the following in your julia repl
 `]add https://github.com/denglerchr/Mosquitto.jl`
+The supported Mosquitto client binary (v2.0.15) should be downloaded automatically.
 
 ## Basic Usage
 
