@@ -48,15 +48,12 @@ end
 
 
 """
-    Client(ip::String, port::Int=1883; kwargs...)
-
-Create a client connection to an MQTT broker. Possible key word arguments are:
-* id::String = randstring(15)  The id should be unique per connection.
-
+    Client(ip::String, port::Int=1883; id::String = randstring(15))
     Client(; id::String = randstring(15))
 
-Create a client structure without connecting to a broker, use this if you need to connect with user/password.
-You will have to call the connect function manually.
+Create a client connection to an MQTT broker. The id should be unique per connection. If ip and port are specified, the
+client will immediately connect to the broker. Use the version without ip and port if you need to connect with user/password.
+You will have to call the connect(client) function manually.
 """
 function Client(ip::String, port::Int=1883; id::String = randstring(15))
     # Create a Client object

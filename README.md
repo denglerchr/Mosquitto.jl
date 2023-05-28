@@ -36,7 +36,7 @@ A message can be of type string, or of a type that can be converted to a Vector{
 topic = "test"
 subscribe(client, topic)
 ```
-The subscription will vanish on disonnect. To automatically reconnect, you should subscribe after a connection was detected. Please look at the example *examples/03_subscribe_conconnect.jl* 
+The subscription will vanish on disonnect. To automatically reconnect, you should subscribe after a connection was detected. Please look at the example [examples/03_subscribe_onconnect.jl](examples/03_subscribe_onconnect.jl) 
 
 ### Simple example
 
