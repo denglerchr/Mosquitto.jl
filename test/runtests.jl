@@ -25,6 +25,7 @@ end
         @test Array(reinterpret(Int, take!(Mosquitto.messages_channel).payload)) == message
     end
     @test disconnect(client) == 0
+    loop(client)
 end
 
 
@@ -46,4 +47,5 @@ client = Client("", 0; connectme = false)
         @test Array(reinterpret(Int, take!(Mosquitto.messages_channel).payload)) == message
     end
     @test disconnect(client) == 0
+    loop(client)
 end

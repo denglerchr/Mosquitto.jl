@@ -3,22 +3,16 @@
 # https://github.com/eclipse/mosquitto/blob/master/include/mosquitto.h
 module Mosquitto
 
-import Base.finalizer
+import Base: finalizer
+import mosquitto_client_jll: libmosquitto
 using Random, Libdl
 
-# find library
-const libmosquitto = @static if Sys.isunix()
-    Libdl.find_library(["libmosquitto", "libmosquitto.so.1"])
-elseif Sys.iswindows()
-    Libdl.find_library("mosquitto.dll", [raw"C:\Program Files\Mosquitto"])
-end
 
 function __init__()
-    libmosquitto == "" && throw("Could not find the mosquitto library. If you're sure that it's installed, try adding it to DL_LOAD_PATH and rebuild the package.")
     mosq_error_code = ccall((:mosquitto_lib_init, libmosquitto), Cint, ()) 
-    mosq_error_code != 0 && println("Mosquitto init returned error code $mosq_error_code")
+    mosq_error_code != 0 && @warn("Mosquitto init returned error code $mosq_error_code")
     v = lib_version()
-    v[1] != 2 || v[2] != 0 && println("Found lib version $(v[1]).$(v[2]), which is different from 2.0. Some functionality might not work")
+    v[1] != 2 || v[2] != 0 || v[3] != 15 && @warn("Found lib version $(v[1]).$(v[2]).$(v[3]), which is different from 2.0.15. Some functionality might not work")
     atexit(lib_cleanup)
 end
 
