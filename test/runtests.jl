@@ -23,7 +23,7 @@ client = Client("test.mosquitto.org", 1883)
 end
 
 
-client = Client("", 0; connectme = false)
+client = Client()
 
 @testset "Authenticated" begin
     @test connect(client, "test.mosquitto.org", 1884; username = "rw", password = "readwrite") == 0
