@@ -5,12 +5,6 @@ message = [1, 2, 3]
 
 client = Client("test.mosquitto.org", 1883)
 
-@testset "General" begin
-    Threads.nthreads()>1 && @test client.status.loop_status == 1
-    Threads.nthreads()==1 && @test client.status.loop_status == 0
-    @test loop_stop(client) == 0
-end
-
 @testset "Unauthenticated" begin
     @test subscribe(client, topic) == 0
     @test loop(client) == 0

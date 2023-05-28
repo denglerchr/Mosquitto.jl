@@ -64,7 +64,7 @@ function unsubscribe(client::Ref{Cmosquitto}, sub::String)
     return msg_nr
 end
 
-#= Broken?
+#= Needs to compile libmosquitto with pthreads
 function loop_start(client::Ref{Cmosquitto})
     msg_nr = ccall((:mosquitto_loop_start, libmosquitto), Cint, (Ptr{Cmosquitto},), client)
     return msg_nr

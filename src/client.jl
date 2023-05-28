@@ -1,6 +1,14 @@
 import Base.n_avail, Base.show
 
+"""
+struct Cobj with fields
+* mosc::Ref{Cmosquitto}
+* obj::Ref{Cvoid}
+* conncb::Ref{Cvoid}
+* dconncb::Ref{Cvoid}
 
+Container storing required pointers of the client.
+"""
 struct Cobjs
     mosc::Ref{Cmosquitto}
     obj::Ref{Cvoid}
@@ -9,16 +17,20 @@ struct Cobjs
 end
 
 
+"""
+struct MoscStatus with fields
+* conn_status::Bool
+
+Container storing status flags
+"""
 mutable struct MoscStatus
     conn_status::Bool
-    loop_status::Bool
 end
 
-
+# Client, constructor below
 struct Client
     id::String
     cptr::Cobjs
-    loop_channel::AbstractChannel{Int}
     status::MoscStatus
 end
 
@@ -28,6 +40,7 @@ function show(io::IO, client::Client)
 end
 
 
+# Clean up memory when garbage collected
 function finalizer(client::Client)
     disconnect(client)
     destroy(client.cptr.mosc)
@@ -53,14 +66,7 @@ function Client(ip::String, port::Int=1883; id::String = randstring(15), connect
     # Possibly Connect to broker
     if connectme
         flag = connect(client, ip, port)
-        flag != 0 && println("Connection to the broker failed")
-
-        # Start loop if it can be started without blocking
-        if flag == 0 && startloop && Threads.nthreads()>1
-            loop_start(client)
-        elseif startloop
-            println("Single thread, loop will be blocking, start it manually using loop_start(::Client) or call loop(client) regularly.")
-        end
+        flag != 0 && @warn("Connection to the broker failed")
     end
 
     return client
@@ -83,8 +89,7 @@ function Client(; id::String = randstring(15))
     disconnect_callback_set(cmosc, cfunc_disconnect)
 
     # Create object
-    loop_channel = Channel{Int}(1)
-    return Client(id, Cobjs(cmosc, cobj, cfunc_connect, cfunc_disconnect), loop_channel, MoscStatus(false, false) )
+    return Client(id, Cobjs(cmosc, cobj, cfunc_connect, cfunc_disconnect), MoscStatus(false) )
 end
 
 
@@ -99,10 +104,10 @@ Connect the client to a broker. kwargs are:
 function connect(client::Client, ip::String, port::Int; username::String = "", password::String = "", keepalive::Int = 60)
     if username != ""
         flag = username_pw_set(client.cptr.mosc, username, password)
-        flag != 0 && println("Couldnt set password and username, error $flag")
+        flag != 0 && @warn("Couldnt set password and username, error $flag")
     end
     flag = connect(client.cptr.mosc, ip; port = port, keepalive = keepalive)
-    flag == 0 ? (client.status.conn_status = true) : println("Connection to broker failed")
+    flag == 0 ? (client.status.conn_status = true) : @warn("Connection to broker failed")
     return flag
 end
 
@@ -111,7 +116,6 @@ end
     disconnect(client::Client)
 """
 function disconnect(client::Client)
-    client.status.loop_status && loop_stop(client)
     flag = disconnect(client.cptr.mosc)
     flag == 0 && (client.status.conn_status = false)
     return flag
