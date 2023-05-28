@@ -1,10 +1,8 @@
 # Read 20 messages in topic "test/..." from the public broker test.mosquitto.org
-# Different from example 02, the client will resubscribe to its topic every time it connects to the broker
 using Mosquitto
 
-# Connect to a broker, but dont start network loop.
-# We will trigger the network loop manually here using the loop function
-client = Client("test.mosquitto.org", 1883; startloop = false)
+# Connect to a broker
+client = Client("test.mosquitto.org", 1883)
 
 # subscribe to topic "test" every time the client connects
 function onconnect(c)
@@ -54,3 +52,4 @@ end
 
 # Close everything
 disconnect(client)
+loop(client)

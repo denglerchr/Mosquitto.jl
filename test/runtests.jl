@@ -5,12 +5,6 @@ message = [1, 2, 3]
 
 client = Client("test.mosquitto.org", 1883)
 
-@testset "General" begin
-    Threads.nthreads()>1 && @test client.status.loop_status == 1
-    Threads.nthreads()==1 && @test client.status.loop_status == 0
-    @test loop_stop(client) == 0
-end
-
 @testset "Unauthenticated" begin
     @test subscribe(client, topic) == 0
     @test loop(client) == 0
@@ -29,7 +23,7 @@ end
 end
 
 
-client = Client("", 0; connectme = false)
+client = Client()
 
 @testset "Authenticated" begin
     @test connect(client, "test.mosquitto.org", 1884; username = "rw", password = "readwrite") == 0

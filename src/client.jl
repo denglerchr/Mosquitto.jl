@@ -1,6 +1,14 @@
 import Base.n_avail, Base.show
 
+"""
+struct Cobj with fields
+* mosc::Ref{Cmosquitto}
+* obj::Ref{Cvoid}
+* conncb::Ref{Cvoid}
+* dconncb::Ref{Cvoid}
 
+Container storing required pointers of the client.
+"""
 struct Cobjs
     mosc::Ref{Cmosquitto}
     obj::Ref{Cvoid}
@@ -9,16 +17,20 @@ struct Cobjs
 end
 
 
+"""
+struct MoscStatus with fields
+* conn_status::Bool
+
+Container storing status flags
+"""
 mutable struct MoscStatus
     conn_status::Bool
-    loop_status::Bool
 end
 
-
+# Client, constructor below
 struct Client
     id::String
     cptr::Cobjs
-    loop_channel::AbstractChannel{Int}
     status::MoscStatus
 end
 
@@ -28,6 +40,7 @@ function show(io::IO, client::Client)
 end
 
 
+# Clean up memory when garbage collected
 function finalizer(client::Client)
     disconnect(client)
     destroy(client.cptr.mosc)
@@ -35,33 +48,20 @@ end
 
 
 """
-    Client(ip::String, port::Int=1883; kwargs...)
+    Client(ip::String, port::Int=1883; id::String = randstring(15))
+    Client(; id::String = randstring(15))
 
-Create a client connection to an MQTT broker. Possible key word arguments are:
-* id::String = randstring(15)  The id should be unique per connection.
-* connectme::Bool = true  Connect immediately if true. If false, you need to manually use *connect(client, ip, port)* and input arguments are not used.
-* startloop::Bool = true  If true, and Threads.nthreads()>1, the network loop will be executed regularly after connection.
-
-    Client( ; id::String = randstring(15))
-
-Create a client structure without connecting to a broker or starting a network loop. 
+Create a client connection to an MQTT broker. The id should be unique per connection. If ip and port are specified, the
+client will immediately connect to the broker. Use the version without ip and port if you need to connect with user/password.
+You will have to call the connect(client) function manually.
 """
-function Client(ip::String, port::Int=1883; id::String = randstring(15), connectme::Bool = true, startloop::Bool = true)
+function Client(ip::String, port::Int=1883; id::String = randstring(15))
     # Create a Client object
     client = Client( ; id = id )
 
-    # Possibly Connect to broker
-    if connectme
-        flag = connect(client, ip, port)
-        flag != 0 && println("Connection to the broker failed")
-
-        # Start loop if it can be started without blocking
-        if flag == 0 && startloop && Threads.nthreads()>1
-            loop_start(client)
-        elseif startloop
-            println("Single thread, loop will be blocking, start it manually using loop_start(::Client) or call loop(client) regularly.")
-        end
-    end
+    # Try connecting to the broker
+    flag = connect(client, ip, port)
+    flag != 0 && @warn("Connection to the broker failed")
 
     return client
 end
@@ -83,8 +83,7 @@ function Client(; id::String = randstring(15))
     disconnect_callback_set(cmosc, cfunc_disconnect)
 
     # Create object
-    loop_channel = Channel{Int}(1)
-    return Client(id, Cobjs(cmosc, cobj, cfunc_connect, cfunc_disconnect), loop_channel, MoscStatus(false, false) )
+    return Client(id, Cobjs(cmosc, cobj, cfunc_connect, cfunc_disconnect), MoscStatus(false) )
 end
 
 
@@ -99,10 +98,10 @@ Connect the client to a broker. kwargs are:
 function connect(client::Client, ip::String, port::Int; username::String = "", password::String = "", keepalive::Int = 60)
     if username != ""
         flag = username_pw_set(client.cptr.mosc, username, password)
-        flag != 0 && println("Couldnt set password and username, error $flag")
+        flag != 0 && @warn("Couldnt set password and username, error $flag")
     end
     flag = connect(client.cptr.mosc, ip; port = port, keepalive = keepalive)
-    flag == 0 ? (client.status.conn_status = true) : println("Connection to broker failed")
+    flag == 0 ? (client.status.conn_status = true) : @warn("Connection to broker failed")
     return flag
 end
 
@@ -111,7 +110,6 @@ end
     disconnect(client::Client)
 """
 function disconnect(client::Client)
-    client.status.loop_status && loop_stop(client)
     flag = disconnect(client.cptr.mosc)
     flag == 0 && (client.status.conn_status = false)
     return flag
@@ -150,6 +148,35 @@ subscribe(client::Client, topic::String; qos::Int = 1) = subscribe(client.cptr.m
 Unsubscribe from a topic.
 """
 unsubscribe(client::Client, topic::String) = unsubscribe(client.cptr.mosc, topic)
+
+
+"""
+    loop(client::Client; timeout::Int = 1000, ntimes::Int = 1)
+
+Perform a network loop. This will get messages of subscriptions and send published messages.
+"""
+function loop(client::Client; timeout::Int = 1000, ntimes::Int = 1, autoreconnect::Bool = true) 
+    out = zero(Cint)
+    for _ = 1:ntimes
+        out = loop(client.cptr.mosc; timeout = timeout)
+        if autoreconnect && out == Integer(MOSQ_ERR_CONN_LOST)
+            flag = reconnect(client)
+            client.status.conn_status = ifelse( flag == 0, true, false )  
+        end
+    end
+    return out
+end
+
+
+"""
+    loop_forever(client::Ref{Cmosquitto}; timeout::Int = 1000)
+
+Blocking, continuously perform network loop. Run in another thread to allow handling messages. Reconnecting is handled, and the function returns after 
+disconnect(client) is called.
+"""
+function loop_forever(client::Client; timeout::Int = 1000)
+    return loop_forever(client.cptr.mosc; timeout = timeout, max_packets = 1)
+end
 
 
 """

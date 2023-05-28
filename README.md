@@ -2,10 +2,6 @@
 
 A wrapper around the Mosquitto C Api. The package provides easy to use MQTT client functionality.
 
-## Package Status
-* **Linux + Julia v1.6.x** has trouble when using multiple threads. You need to upgrade to 1.7 or use single thread with manual "loop" calls for that specific configuration.
-MQTT v5 features like properties are not yet implemented. If you have the need for those, feel free to add an request on Github.
-
 ## Installation
 Download the julia package by typing the following in your julia repl
 `]add https://github.com/denglerchr/Mosquitto.jl`
@@ -20,7 +16,7 @@ using Mosquitto
 client = Client("test.mosquitto.org", 1883)
 ```
 
-Create a client using the ip and port of the broker. If you use >1 julia thread, the network loop will start immediately.
+Create a client using the ip and port of the broker. 
 Use ?Mosquitto.Client for information on client settings.
 
 ### Publish a message
@@ -29,18 +25,18 @@ topic = "test"
 message = "hello world"
 publish(client, topic, message)
 
-# only necessary if network loop isnt running in seprate thread
-!client.status.loop_status && loop(client)
+# Perform network loop
+loop(client)
 ```
 
-A message can be of type string, or of a type that can be converted to a Vector{UInt8} using reinterpret. If you do not use multiple threads and *loop_start(client)*, publishing might not happen until you call *loop(client)*.
+A message can be of type string, or of a type that can be converted to a Vector{UInt8} using reinterpret. Publishing might not happen until you call *loop(client)*.
 
 ### Subscribe to a topic
 ```julia
 topic = "test"
 subscribe(client, topic)
 ```
-The subscription will vanish on disonnect. To automatically reconnect, you should subscribe after a connection was detected. Please look at the example *examples/03_subscribe_conconnect.jl* 
+The subscription will vanish on disonnect. To automatically reconnect, you should subscribe after a connection was detected. Please look at the example [examples/03_subscribe_onconnect.jl](examples/03_subscribe_onconnect.jl) 
 
 ### Simple example
 
@@ -49,7 +45,7 @@ This example scripts will
 2) subscribes to the topic "jltest"
 3) publish 2 messages to the same topic "jltest"
 4) read and print the messages.
-Note that the script might print 3 messages if a message for that topic is "retained".
+Note that the script might print 3 messages if a message for that topic was "retained".
 
 ```julia
 using Mosquitto
@@ -66,9 +62,8 @@ subscribe(client, topic)
 publish(client, topic, "Hi from Julia"; retain = true)
 publish(client, topic, "Another message"; retain = false)
 
-# lets wait to be sure to receive something
-# or call the loop during that time, to make sure stuff is sent/received
-client.status.loop_status ? sleep(3) : loop(client; timeout = 500, ntimes = 10)
+# Lets call the network loop a few times, to make sure messages are sent/received
+loop(client; timeout = 500, ntimes = 10)
 
 # 4)
 nmessages = Base.n_avail(Mosquitto.messages_channel)
@@ -84,10 +79,12 @@ end
 While the mosquitto C library requires callback functions, this package uses Channels to indicate the receiving of a message or the connection/disconnection to/from a broker. You should `take!(channel)` on these, possibly after checking for the number of available messages if not run in a separate thread. The two channels can be accessed via:
 * `get_messages_channel()` or `Mosquitto.messages_channel`
 * `get_connect_channel()` or `Mosquitto.connect_channel`
+To awaid blocking when channels are full due to too many messages, they are treated similar as circular buffers, i.e., first item is removed if channel is full and a new item is pushed.
 
-### Use a single threads or multiple threads
-For simplicity of use, the network loop is executed in parallel when using multiple threads. This can in some cases lead to problems, e.g., when using multiple clients, as running multiple loops in parallel is not supported currently. Therefore, client loops should be run in sequence, see *examples/multiple_clients.jl* for an example.
-
+### Running the loop continuously
+The network loop needs to be called continuously in order to send receive messages. The simplest way to do this
+is to call the *loop(client)* function regularly. Alternatively, the mosquitto library provides
+a *loop_forever(client)* function that is wrapped as well. This needs to be executed in a separate thread, as the function is blocking. For an example usage, see [examples/07_loop_forever.jl](examples/07_loop_forever.jl).
 
 ### Authentication
 You find examples in the example folder for how to use TLS connections and user/password authetication. Currently bad credentials do not lead to any error or warning, your messages will just not be sent and you will not receive any messages.
@@ -101,7 +98,7 @@ using Mosquitto
 
 # Connect to a broker using tls and username/password authetication.
 # The CA certificate can be downloaded from the mosquitto page https://test.mosquitto.org/ssl/mosquitto.org.crt
-# The connect function will not start a network loop in parallel, loop is triggered manually later.
+# The connect function must be used only after tls_set.
 client = Client()
 const cafilepath = ... # add path to ca certificate here
 tls_set(client, cafilepath)
@@ -158,6 +155,7 @@ while mrcount < 20
     mrcount += onmessage(mrcount) # check for messages
 end
 
-# Disconnect the client everything
+# Disconnect the client
 disconnect(client)
+loop(client)
 ```

@@ -58,7 +58,7 @@ function callback_message(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, message::Ptr{CM
 
     # put it in the channel for further use
     if Base.n_avail(messages_channel)>=messages_channel.sz_max
-        take!(messages_channel)
+        popfirst!(messages_channel)
     end
     put!(messages_channel, MessageCB(topic, jlpayload))
     
@@ -68,7 +68,7 @@ end
 
 function callback_connect(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, rc::Cint)
     if Base.n_avail(connect_channel)>=connect_channel.sz_max
-        take!(connect_channel)
+        popfirst!(connect_channel)
     end
     put!( connect_channel, ConnectionCB(mos, one(UInt8), rc ) )
     return nothing
@@ -77,7 +77,7 @@ end
 
 function callback_disconnect(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, rc::Cint)
     if Base.n_avail(connect_channel)>=connect_channel.sz_max
-        take!(connect_channel)
+        popfirst!(connect_channel)
     end
     put!( connect_channel, ConnectionCB(mos, zero(UInt8), rc ) )
     return nothing

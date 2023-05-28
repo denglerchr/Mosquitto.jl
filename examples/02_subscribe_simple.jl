@@ -1,7 +1,7 @@
 # Read 20 messages in topic "test/..." from the public broker test.mosquitto.org
 using Mosquitto
 
-# Connect to a broker, also starts loop if Threads.nthreads()>1
+# Connect to a broker
 client = Client("test.mosquitto.org", 1883)
 
 # subscribe to topic "test"
@@ -30,3 +30,4 @@ end
 
 # Close everything
 disconnect(client)
+loop(client)
