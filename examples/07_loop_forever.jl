@@ -1,5 +1,10 @@
 # Read 20 messages in topic "test/..." from the public broker test.mosquitto.org
-# Different from example 02, the client will resubscribe to its topic every time it connects to the broker
+# This script uses the loop_forever, which is blocking, therefore this needs to run with at least 2 Threads
+if Threads.nthreads() < 2
+    println("This script required at least 2 threads to runcorrectly")
+    exit(1)
+end
+
 using Mosquitto
 const messages_until_disconnect = 300
 

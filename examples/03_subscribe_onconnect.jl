@@ -1,5 +1,4 @@
 # Read 20 messages in topic "test/..." from the public broker test.mosquitto.org
-# Different from example 02, the client will resubscribe to its topic every time it connects to the broker
 using Mosquitto
 
 # Connect to a broker
@@ -53,3 +52,4 @@ end
 
 # Close everything
 disconnect(client)
+loop(client)
