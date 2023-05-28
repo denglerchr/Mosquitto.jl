@@ -12,7 +12,7 @@ const messages_until_disconnect = 300
 # We will trigger the network loop manually here using the loop function
 client = Client("test.mosquitto.org", 1883)
 
-# subscribe to topic "test" every time the client connects
+# subscribe to topic "test" every time the client connects. Return on disconnect.
 function onconnect(client)
     disconnect = false
     while !disconnect
@@ -28,7 +28,8 @@ function onconnect(client)
     return 0
 end
 
-
+# Print a message each time, one is received. Disconnect after
+# *messages_until_disconnect* messages
 function onmessage(client)
     msgcount = 0
     while msgcount < messages_until_disconnect
@@ -48,6 +49,6 @@ end
 # the channel Mosquitto.messages_channel.
 @async onconnect(client)
 @async onmessage(client)
-temp = Threads.@spawn loop_forever(client)
+temp = Threads.@spawn loop_forever(client) # will run until disconnect is called
 wait(temp)
 println("Done")

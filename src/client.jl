@@ -162,6 +162,7 @@ function loop(client::Client; timeout::Int = 1000, ntimes::Int = 1, autoreconnec
     out = zero(Cint)
     for _ = 1:ntimes
         out = loop(client.cptr.mosc; timeout = timeout)
+        out == Integer(MOSQ_ERR_NO_CONN) && throw("Loop called, but client was not connected to a broker.")
         if autoreconnect && out == Integer(MOSQ_ERR_CONN_LOST)
             flag = reconnect(client)
             client.status.conn_status = ifelse( flag == 0, true, false )  

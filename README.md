@@ -2,10 +2,6 @@
 
 A wrapper around the Mosquitto C Api. The package provides easy to use MQTT client functionality.
 
-## Package Status
-* **Linux + Julia v1.6.x** has trouble when using multiple threads. You need to upgrade to 1.7 or use single thread with manual "loop" calls for that specific configuration.
-MQTT v5 features like properties are not yet implemented. If you have the need for those, feel free to add an request on Github.
-
 ## Installation
 Download the julia package by typing the following in your julia repl
 `]add https://github.com/denglerchr/Mosquitto.jl`
@@ -33,7 +29,7 @@ publish(client, topic, message)
 loop(client)
 ```
 
-A message can be of type string, or of a type that can be converted to a Vector{UInt8} using reinterpret. If you do not use multiple threads and *loop_start(client)*, publishing might not happen until you call *loop(client)*.
+A message can be of type string, or of a type that can be converted to a Vector{UInt8} using reinterpret. Publishing might not happen until you call *loop(client)*.
 
 ### Subscribe to a topic
 ```julia
@@ -49,7 +45,7 @@ This example scripts will
 2) subscribes to the topic "jltest"
 3) publish 2 messages to the same topic "jltest"
 4) read and print the messages.
-Note that the script might print 3 messages if a message for that topic is "retained".
+Note that the script might print 3 messages if a message for that topic was "retained".
 
 ```julia
 using Mosquitto
