@@ -157,6 +157,24 @@ unsubscribe(client::Client, topic::String) = unsubscribe(client.cptr.mosc, topic
 
 
 """
+    loop(client::Client; timeout::Int = 1000, ntimes::Int = 1)
+
+Perform a network loop. This will get messages of subscriptions and send published messages.
+"""
+function loop(client::Client; timeout::Int = 1000, ntimes::Int = 1, autoreconnect::Bool = true) 
+    out = zero(Cint)
+    for _ = 1:ntimes
+        out = loop(client.cptr.mosc; timeout = timeout)
+        if autoreconnect && out == 4
+            flag = reconnect(client)
+            client.status.conn_status = ifelse( flag == 0, true, false )  
+        end
+    end
+    return out
+end
+
+
+"""
     tls_set(client::Client, cafile::String; certfile::String = "", keyfile::String = "")
 """
 function tls_set(client::Client, cafile::String; certfile::String = "", keyfile::String = "")

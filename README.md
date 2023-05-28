@@ -20,7 +20,7 @@ using Mosquitto
 client = Client("test.mosquitto.org", 1883)
 ```
 
-Create a client using the ip and port of the broker. If you use >1 julia thread, the network loop will start immediately.
+Create a client using the ip and port of the broker. 
 Use ?Mosquitto.Client for information on client settings.
 
 ### Publish a message
@@ -29,8 +29,8 @@ topic = "test"
 message = "hello world"
 publish(client, topic, message)
 
-# only necessary if network loop isnt running in seprate thread
-!client.status.loop_status && loop(client)
+# Perform network loop
+loop(client)
 ```
 
 A message can be of type string, or of a type that can be converted to a Vector{UInt8} using reinterpret. If you do not use multiple threads and *loop_start(client)*, publishing might not happen until you call *loop(client)*.
@@ -66,9 +66,8 @@ subscribe(client, topic)
 publish(client, topic, "Hi from Julia"; retain = true)
 publish(client, topic, "Another message"; retain = false)
 
-# lets wait to be sure to receive something
-# or call the loop during that time, to make sure stuff is sent/received
-client.status.loop_status ? sleep(3) : loop(client; timeout = 500, ntimes = 10)
+# Lets call the network loop a few times, to make sure messages are sent/received
+loop(client; timeout = 500, ntimes = 10)
 
 # 4)
 nmessages = Base.n_avail(Mosquitto.messages_channel)
@@ -84,10 +83,7 @@ end
 While the mosquitto C library requires callback functions, this package uses Channels to indicate the receiving of a message or the connection/disconnection to/from a broker. You should `take!(channel)` on these, possibly after checking for the number of available messages if not run in a separate thread. The two channels can be accessed via:
 * `get_messages_channel()` or `Mosquitto.messages_channel`
 * `get_connect_channel()` or `Mosquitto.connect_channel`
-
-### Use a single threads or multiple threads
-For simplicity of use, the network loop is executed in parallel when using multiple threads. This can in some cases lead to problems, e.g., when using multiple clients, as running multiple loops in parallel is not supported currently. Therefore, client loops should be run in sequence, see *examples/multiple_clients.jl* for an example.
-
+To awaid blocking when channels are full due to too many messages, they are treated similar as circular buffers, i.e., first item is removed if channel is full and a new item is pushed.
 
 ### Authentication
 You find examples in the example folder for how to use TLS connections and user/password authetication. Currently bad credentials do not lead to any error or warning, your messages will just not be sent and you will not receive any messages.
@@ -158,6 +154,7 @@ while mrcount < 20
     mrcount += onmessage(mrcount) # check for messages
 end
 
-# Disconnect the client everything
+# Disconnect the client
 disconnect(client)
+loop(client)
 ```
