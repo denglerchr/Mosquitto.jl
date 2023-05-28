@@ -1,55 +1,48 @@
 # Read 20 messages in topic "test/..." from the public broker test.mosquitto.org
 # Different from example 02, the client will resubscribe to its topic every time it connects to the broker
 using Mosquitto
+const messages_until_disconnect = 300
 
-# Connect to a broker
+# Connect to a broker, but dont start network loop.
+# We will trigger the network loop manually here using the loop function
 client = Client("test.mosquitto.org", 1883)
 
 # subscribe to topic "test" every time the client connects
-function onconnect(c)
-    # Check if something happened, else return 0
-    nmessages = Base.n_avail(get_connect_channel())
-    nmessages == 0 && return 0
-
-    # At this point, a connection or disconnection happened
-    for i = 1:nmessages
+function onconnect(client)
+    disconnect = false
+    while !disconnect
         conncb = take!(get_connect_channel())
         if conncb.val == 1
             println("Connection of client $(conncb.clientptr) successfull, subscribing to test/#")
-            subscribe(c, "test/#")
+            subscribe(client, "test/#")
         elseif conncb.val == 0
             println("Client $(conncb.clientptr) disconnected")
+            disconnect = true
         end
     end
-    return nmessages
+    return 0
 end
 
 
-function onmessage(mrcount)
-    # Check if something happened, else return 0
-    nmessages = Base.n_avail(get_messages_channel())
-    nmessages == 0 && return 0
-
-    # At this point, a message was received, lets process it
-    for i = 1:nmessages
+function onmessage(client)
+    msgcount = 0
+    while msgcount < messages_until_disconnect
         temp = take!(get_messages_channel())
-        println("Message $(mrcount+i):")
+        msgcount += 1
+        println("Message $(msgcount):")
         message = String(temp.payload)
         length(message) > 20 && (message = message[1:18]*"...")
         println("\ttopic: $(temp.topic)\tmessage:$(message)")
     end
-    return nmessages
+    disconnect(client)
+    return msgcount
 end
 
 
 # Messages will be put as a tuple in
 # the channel Mosquitto.messages_channel.
-mrcount = 0
-while mrcount < 20
-    loop(client) # network loop
-    onconnect(client) # check for connection/disconnection
-    mrcount += onmessage(mrcount) # check for messages
-end
-
-# Close everything
-disconnect(client)
+@async onconnect(client)
+@async onmessage(client)
+temp = Threads.@spawn loop_forever(client)
+wait(temp)
+println("Done")

@@ -52,22 +52,19 @@ end
 
 Create a client connection to an MQTT broker. Possible key word arguments are:
 * id::String = randstring(15)  The id should be unique per connection.
-* connectme::Bool = true  Connect immediately if true. If false, you need to manually use *connect(client, ip, port)* and input arguments are not used.
-* startloop::Bool = true  If true, and Threads.nthreads()>1, the network loop will be executed regularly after connection.
 
-    Client( ; id::String = randstring(15))
+    Client(; id::String = randstring(15))
 
-Create a client structure without connecting to a broker or starting a network loop. 
+Create a client structure without connecting to a broker, use this if you need to connect with user/password.
+You will have to call the connect function manually.
 """
-function Client(ip::String, port::Int=1883; id::String = randstring(15), connectme::Bool = true, startloop::Bool = true)
+function Client(ip::String, port::Int=1883; id::String = randstring(15))
     # Create a Client object
     client = Client( ; id = id )
 
-    # Possibly Connect to broker
-    if connectme
-        flag = connect(client, ip, port)
-        flag != 0 && @warn("Connection to the broker failed")
-    end
+    # Try connecting to the broker
+    flag = connect(client, ip, port)
+    flag != 0 && @warn("Connection to the broker failed")
 
     return client
 end
@@ -165,12 +162,23 @@ function loop(client::Client; timeout::Int = 1000, ntimes::Int = 1, autoreconnec
     out = zero(Cint)
     for _ = 1:ntimes
         out = loop(client.cptr.mosc; timeout = timeout)
-        if autoreconnect && out == 4
+        if autoreconnect && out == Integer(MOSQ_ERR_CONN_LOST)
             flag = reconnect(client)
             client.status.conn_status = ifelse( flag == 0, true, false )  
         end
     end
     return out
+end
+
+
+"""
+    loop_forever(client::Ref{Cmosquitto}; timeout::Int = 1000)
+
+Blocking, continuously perform network loop. Run in another thread to allow handling messages. Reconnecting is handled, and the function returns after 
+disconnect(client) is called.
+"""
+function loop_forever(client::Client; timeout::Int = 1000)
+    return loop_forever(client.cptr.mosc; timeout = timeout, max_packets = 1)
 end
 
 

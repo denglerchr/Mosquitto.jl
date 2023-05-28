@@ -30,3 +30,4 @@ end
 
 # Close everything
 disconnect(client)
+loop(client)
