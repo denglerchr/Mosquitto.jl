@@ -6,7 +6,7 @@ if Threads.nthreads() < 2
 end
 
 using Mosquitto
-const messages_until_disconnect = 300
+const messages_until_disconnect = 200
 
 # Connect to a broker, but dont start network loop.
 # We will trigger the network loop manually here using the loop function
@@ -49,6 +49,6 @@ end
 # the channel Mosquitto.messages_channel.
 @async onconnect(client)
 @async onmessage(client)
-temp = Threads.@spawn loop_forever(client) # will run until disconnect is called
-wait(temp)
+looptask = Threads.@spawn (@info "Started loop on thread $(Threads.threadid())"; loop_forever(client)) # will run until disconnect is called
+wait(looptask)
 println("Done")
