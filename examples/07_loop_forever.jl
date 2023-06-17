@@ -1,11 +1,11 @@
 # Read 20 messages in topic "test/..." from the public broker test.mosquitto.org
 # This script uses the loop_forever, which is blocking, therefore this needs to run with at least 2 Threads
 if Threads.nthreads() < 2
-    println("This script required at least 2 threads to runcorrectly")
+    println("This script required at least 2 threads to run correctly")
     exit(1)
 end
 
-using Mosquitto
+using Mosquitto, ThreadPools
 const messages_until_disconnect = 200
 
 # Connect to a broker, but dont start network loop.
@@ -49,6 +49,6 @@ end
 # the channel Mosquitto.messages_channel.
 @async onconnect(client)
 @async onmessage(client)
-looptask = Threads.@spawn (@info "Started loop on thread $(Threads.threadid())"; loop_forever(client)) # will run until disconnect is called
+looptask = ThreadPools.@tspawnat 2 (@info "Started loop on thread $(Threads.threadid())"; loop_forever(client)) # will run until disconnect is called
 wait(looptask)
 println("Done")
