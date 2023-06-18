@@ -6,7 +6,7 @@
 
 using Mosquitto
 
-# Connect to a broker, also starts loop if Threads.nthreads()>1
+# Connect to multiple brokers
 client1 = Client("test.mosquitto.org", 1883, startloop = false) # will receive message
 client2 = Client("localhost", 1883, startloop = false) # will publish to localhost
 client3 = Client("localhost", 1883, startloop = false) # will receive from localhost

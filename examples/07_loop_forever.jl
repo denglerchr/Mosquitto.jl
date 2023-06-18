@@ -8,8 +8,7 @@ end
 using Mosquitto, ThreadPools
 const messages_until_disconnect = 200
 
-# Connect to a broker, but dont start network loop.
-# We will trigger the network loop manually here using the loop function
+# Connect to a broker
 client = Client("test.mosquitto.org", 1883)
 
 # subscribe to topic "test" every time the client connects. Return on disconnect.
