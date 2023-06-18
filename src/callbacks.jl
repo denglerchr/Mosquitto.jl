@@ -14,7 +14,7 @@ end
 struct ConnectionCB with fields
 * clientptr::Ptr
 * val::UInt8
-* returncode::Cint
+* returncode::mosq_err_t
 
 The clientptr contains the ptr of the client that connected or disconnected.
 This allows to distinguish between clients.
@@ -24,7 +24,7 @@ returncode is the MQTT return code which can be used to identify, e.g., the reas
 struct ConnectionCB
     clientptr::Ptr{Cmosquitto}
     val::UInt8
-    returncode::Cint
+    returncode::mosq_err_t
 end
 
 
@@ -40,7 +40,7 @@ See ?Mosquitto.MessageCB for information on the struct
 get_messages_channel() = messages_channel
 
 """
-get_connect_channel()
+    get_connect_channel()
 
 Returns the channel to which event notifications for connections or disconnections are sent. The channel is a Channel{ConnectionCB}(5).
 See ?Mosquitto.ConnectionCB for information on the struct
@@ -70,7 +70,7 @@ function callback_connect(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, rc::Cint)
     if Base.n_avail(connect_channel)>=connect_channel.sz_max
         popfirst!(connect_channel)
     end
-    put!( connect_channel, ConnectionCB(mos, one(UInt8), rc ) )
+    put!( connect_channel, ConnectionCB(mos, one(UInt8), mosq_err_t(rc) ) )
     return nothing
 end
 
@@ -79,6 +79,6 @@ function callback_disconnect(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, rc::Cint)
     if Base.n_avail(connect_channel)>=connect_channel.sz_max
         popfirst!(connect_channel)
     end
-    put!( connect_channel, ConnectionCB(mos, zero(UInt8), rc ) )
+    put!( connect_channel, ConnectionCB(mos, zero(UInt8), mosq_err_t(rc) ) )
     return nothing
 end
