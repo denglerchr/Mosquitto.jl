@@ -9,6 +9,8 @@ The supported Mosquitto client binary (v2.0.15) should be downloaded automatical
 
 ## Basic Usage
 
+Apart from the descriptions below, exampled can be found in the [examples](examples/) folder
+
 ### Connect to a broker
 
 ```julia
