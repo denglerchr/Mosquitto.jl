@@ -1,6 +1,6 @@
 # Mosquitto.jl
 
-A wrapper around the [Mosquitto](https://mosquitto.org/) C Api. The package provides easy to use MQTT client functionality.
+A wrapper around the [Mosquitto](https://mosquitto.org/) C Api. Currently only the MQTT 3.1 functionality is wrapped.
 
 ## Installation
 Download the julia package by typing the following in your julia repl
@@ -38,7 +38,7 @@ A message can be of type string, or of a type that can be converted to a Vector{
 topic = "test"
 subscribe(client, topic)
 ```
-The subscription will vanish on disonnect. To automatically reconnect, you should subscribe after a connection was detected. Please look at the example [examples/03_subscribe_onconnect.jl](examples/03_subscribe_onconnect.jl) 
+The subscription will vanish on disonnect. To automatically subscribe each time the client connects, you can subscribe after a connection was detected. Please look at the example [examples/03_subscribe_onconnect.jl](examples/03_subscribe_onconnect.jl) 
 
 ### Simple example
 
