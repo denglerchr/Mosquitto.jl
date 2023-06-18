@@ -61,7 +61,7 @@ function Client(ip::String, port::Int=1883; id::String = randstring(15))
 
     # Try connecting to the broker
     flag = connect(client, ip, port)
-    flag != 0 && @warn("Connection to the broker failed")
+    flag != MOSQ_ERR_SUCCESS && @warn("Connection to the broker failed, error $flag")
 
     return client
 end
@@ -98,10 +98,10 @@ Connect the client to a broker. kwargs are:
 function connect(client::Client, ip::String, port::Int; username::String = "", password::String = "", keepalive::Int = 60)
     if username != ""
         flag = username_pw_set(client.cptr.mosc, username, password)
-        flag != 0 && @warn("Couldnt set password and username, error $flag")
+        flag != MOSQ_ERR_SUCCESS && @warn("Couldnt set password and username, error $flag")
     end
     flag = connect(client.cptr.mosc, ip; port = port, keepalive = keepalive)
-    flag == 0 ? (client.status.conn_status = true) : @warn("Connection to broker failed")
+    flag == MOSQ_ERR_SUCCESS ? (client.status.conn_status = true) : @warn("Connection to broker failed, error $flag")
     return flag
 end
 
@@ -111,7 +111,7 @@ end
 """
 function disconnect(client::Client)
     flag = disconnect(client.cptr.mosc)
-    flag == 0 && (client.status.conn_status = false)
+    flag == MOSQ_ERR_SUCCESS && (client.status.conn_status = false)
     return flag
 end
 
@@ -121,7 +121,7 @@ end
 """
 function reconnect(client::Client)
     flag = reconnect(client.cptr.mosc)
-    flag == 0 && (client.status.conn_status = true)
+    flag == MOSQ_ERR_SUCCESS && (client.status.conn_status = true)
     return flag
 end
 
@@ -159,9 +159,9 @@ function loop(client::Client; timeout::Int = 1000, ntimes::Int = 1, autoreconnec
     out = zero(Cint)
     for _ = 1:ntimes
         out = loop(client.cptr.mosc; timeout = timeout)
-        if autoreconnect && out == Integer(MOSQ_ERR_CONN_LOST)
+        if autoreconnect && out == MOSQ_ERR_CONN_LOST
             flag = reconnect(client)
-            client.status.conn_status = ifelse( flag == 0, true, false )  
+            client.status.conn_status = ifelse( flag == MOSQ_ERR_SUCCESS, true, false )  
         end
     end
     return out
