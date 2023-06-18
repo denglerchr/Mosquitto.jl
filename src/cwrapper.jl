@@ -10,7 +10,7 @@ struct CMosquittoMessage
 end
 
 # Error codes from mosquitto.h
-@enum mosq_err_t begin
+@enum mosq_err_t::Cint begin
 	MOSQ_ERR_AUTH_CONTINUE = -4
 	MOSQ_ERR_NO_SUBSCRIBERS = -3
 	MOSQ_ERR_SUB_EXISTS = -2
