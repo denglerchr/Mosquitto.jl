@@ -49,6 +49,16 @@ end
 	MOSQ_ERR_ALREADY_EXISTS = 31
 end
 
+# connack codes for MQTT3.1 and 3.1.1 from mosquitto.h
+@enum mqtt311_connack_codes::Cint begin
+	CONNACK_ACCEPTED = 0
+	CONNACK_REFUSED_PROTOCOL_VERSION = 1
+	CONNACK_REFUSED_IDENTIFIER_REJECTED = 2
+	CONNACK_REFUSED_SERVER_UNAVAILABLE = 3
+	CONNACK_REFUSED_BAD_USERNAME_PASSWORD = 4
+	CONNACK_REFUSED_NOT_AUTHORIZED = 5
+end
+
 
 function mosquitto_new(id::String, clean_start::Bool, obj)
     return ccall((:mosquitto_new, libmosquitto), Ptr{Cmosquitto}, (Cstring, Bool, Ptr{Cvoid}), id, clean_start, obj)

@@ -24,7 +24,7 @@ returncode is the MQTT return code which can be used to identify, e.g., the reas
 struct ConnectionCB
     clientptr::Ptr{Cmosquitto}
     val::UInt8
-    returncode::mosq_err_t
+    returncode::mqtt311_connack_codes
 end
 
 
@@ -70,7 +70,7 @@ function callback_connect(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, rc::Cint)
     if Base.n_avail(connect_channel)>=connect_channel.sz_max
         popfirst!(connect_channel)
     end
-    put!( connect_channel, ConnectionCB(mos, one(UInt8), mosq_err_t(rc) ) )
+    put!( connect_channel, ConnectionCB(mos, one(UInt8), mqtt311_connack_codes(rc) ) )
     return nothing
 end
 
@@ -79,6 +79,6 @@ function callback_disconnect(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, rc::Cint)
     if Base.n_avail(connect_channel)>=connect_channel.sz_max
         popfirst!(connect_channel)
     end
-    put!( connect_channel, ConnectionCB(mos, zero(UInt8), mosq_err_t(rc) ) )
+    put!( connect_channel, ConnectionCB(mos, zero(UInt8), mqtt311_connack_codes(rc) ) )
     return nothing
 end

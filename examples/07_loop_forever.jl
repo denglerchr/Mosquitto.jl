@@ -17,10 +17,10 @@ function onconnect(client)
     while !disconnect
         conncb = take!(get_connect_channel())
         if conncb.val == 1
-            println("Connection of client $(conncb.clientptr) successfull, subscribing to test/#")
+            println("Connection of client $(conncb.clientptr) successfull ($(conncb.returncode)), subscribing to test/#")
             subscribe(client, "test/#")
         elseif conncb.val == 0
-            println("Client $(conncb.clientptr) disconnected")
+            println("Client $(conncb.clientptr) disconnected ($(conncb.returncode))")
             disconnect = true
         end
     end
