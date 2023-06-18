@@ -156,7 +156,7 @@ unsubscribe(client::Client, topic::String) = unsubscribe(client.cptr.mosc, topic
 Perform a network loop. This will get messages of subscriptions and send published messages.
 """
 function loop(client::Client; timeout::Int = 1000, ntimes::Int = 1, autoreconnect::Bool = true) 
-    out = zero(Cint)
+    out = MOSQ_ERR_INVAL
     for _ = 1:ntimes
         out = loop(client.cptr.mosc; timeout = timeout)
         if autoreconnect && out == MOSQ_ERR_CONN_LOST
