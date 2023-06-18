@@ -127,11 +127,11 @@ end
 
 
 """
-    publish(client::Client, topic::String, payload; qos::Int = 1, retain::Bool = true)
+    publish(client::Client, topic::String, payload; qos::Int = 1, retain::Bool = false)
 
 Publish a message to the broker.
 """
-publish(client::Client, topic::String, payload; qos::Int = 1, retain::Bool = true) = publish(client.cptr.mosc, topic, payload; qos = qos, retain = retain)
+publish(client::Client, topic::String, payload; qos::Int = 1, retain::Bool = false) = publish(client.cptr.mosc, topic, payload; qos = qos, retain = retain)
 
 
 """
