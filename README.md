@@ -1,6 +1,6 @@
 # Mosquitto.jl
 
-A wrapper around the Mosquitto C Api. The package provides easy to use MQTT client functionality.
+A wrapper around the [Mosquitto](https://mosquitto.org/) C Api. The package provides easy to use MQTT client functionality.
 
 ## Installation
 Download the julia package by typing the following in your julia repl
