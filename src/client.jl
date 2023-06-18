@@ -108,6 +108,8 @@ end
 
 """
     disconnect(client::Client)
+
+Disconnect the client.
 """
 function disconnect(client::Client)
     flag = disconnect(client.cptr.mosc)
@@ -129,7 +131,7 @@ end
 """
     publish(client::Client, topic::String, payload; qos::Int = 1, retain::Bool = false)
 
-Publish a message to the broker.
+Publish a message to the broker. 
 """
 publish(client::Client, topic::String, payload; qos::Int = 1, retain::Bool = false) = publish(client.cptr.mosc, topic, payload; qos = qos, retain = retain)
 
