@@ -44,10 +44,12 @@ function onmessage(client)
 end
 
 
-# Messages will be put as a tuple in
-# the channel Mosquitto.messages_channel.
+# message and connection handling on thread 1 asynchronously
 @async onconnect(client)
 @async onmessage(client)
+
+# Loop on thread 2 (blocking) until disconnect is called
 looptask = ThreadPools.@tspawnat 2 (@info "Started loop on thread $(Threads.threadid())"; loop_forever(client)) # will run until disconnect is called
 wait(looptask)
+
 println("Done")
