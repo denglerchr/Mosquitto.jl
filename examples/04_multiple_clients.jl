@@ -7,9 +7,9 @@
 using Mosquitto
 
 # Connect to multiple brokers
-client1 = Client("test.mosquitto.org", 1883, startloop = false) # will receive message
-client2 = Client("localhost", 1883, startloop = false) # will publish to localhost
-client3 = Client("localhost", 1883, startloop = false) # will receive from localhost
+client1 = Client("test.mosquitto.org", 1883) # will receive message
+client2 = Client("localhost", 1883) # will publish to localhost
+client3 = Client("localhost", 1883) # will receive from localhost
 
 # subscribe to topic different topics for each client
 function subonconnect(c1::Client, c2::Client, c3::Client)
