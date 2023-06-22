@@ -59,6 +59,22 @@ end
 	CONNACK_REFUSED_NOT_AUTHORIZED = 5
 end
 
+# Library version, init, and cleanup
+
+function lib_version()
+    maj = zeros(Int, 1)
+    min = zeros(Int, 1)
+    rev = zeros(Int, 1)
+    ccall((:mosquitto_lib_version, libmosquitto), Cint, (Ptr{Cint}, Ptr{Cint}, Ptr{Cint}), maj, min, rev)
+    return maj[1], min[1], rev[1]
+end
+
+
+function lib_cleanup()
+    ccall((:mosquitto_lib_cleanup, libmosquitto), Cvoid, ())
+end
+
+# Client creation, destruction, and reinitialisation
 
 function mosquitto_new(id::String, clean_start::Bool, obj)
     return ccall((:mosquitto_new, libmosquitto), Ptr{Cmosquitto}, (Cstring, Bool, Ptr{Cvoid}), id, clean_start, obj)
@@ -68,8 +84,16 @@ end
 function destroy(client::Ref{Cmosquitto})
     return ccall((:mosquitto_destroy, libmosquitto), Cvoid, (Ptr{Cmosquitto},), client)
 end
-finalizer(client::Ref{Cmosquitto}) = destroy(client)
 
+# Username and password
+
+function username_pw_set(client::Ref{Cmosquitto}, username::String, password::String)
+    #password != "" && (password = Cstring(C_NULL))
+    msg_nr = ccall((:mosquitto_username_pw_set, libmosquitto), Cint, (Ptr{Cmosquitto}, Cstring, Cstring), client, username, password)
+    return mosq_err_t(msg_nr)
+end
+
+# Connecting, reconnecting, disconnecting
 
 function connect(client::Ref{Cmosquitto}, host::String; port::Int = 1883, keepalive::Int = 60)
     msg_nr = ccall((:mosquitto_connect, libmosquitto), Cint, (Ptr{Cmosquitto}, Cstring, Cint, Cint), client, host, port, keepalive)
@@ -88,6 +112,7 @@ function disconnect(client::Ref{Cmosquitto})
     return mosq_err_t(msg_nr)
 end
 
+# Publishing, subscribing, unsubscribing
 
 function publish(client::Ref{Cmosquitto}, topic::String, payload; qos::Int = 1, retain::Bool = true)
     payloadnew = getbytes(payload)
@@ -117,6 +142,8 @@ function unsubscribe(client::Ref{Cmosquitto}, sub::String)
     return mosq_err_t(msg_nr)
 end
 
+# Network loop (managed by libmosquitto)
+
 #= Needs to compile libmosquitto with pthreads
 function loop_start(client::Ref{Cmosquitto})
     msg_nr = ccall((:mosquitto_loop_start, libmosquitto), Cint, (Ptr{Cmosquitto},), client)
@@ -141,28 +168,7 @@ function loop(client; timeout::Int = 1000, max_packets::Int = 1)
     return mosq_err_t(msg_nr)
 end
 
-
-function connect_callback_set(client::Ref{Cmosquitto}, cfunc)
-    return ccall((:mosquitto_connect_callback_set, libmosquitto), Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}), client, cfunc)
-end
-
-
-function disconnect_callback_set(client::Ref{Cmosquitto}, cfunc)
-    return ccall((:mosquitto_disconnect_callback_set, libmosquitto), Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}), client, cfunc)
-end
-
-
-function message_callback_set(client::Ref{Cmosquitto}, cfunc)
-    ccall((:mosquitto_message_callback_set, libmosquitto), Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}), client, cfunc)
-    return nothing
-end
-
-
-function username_pw_set(client::Ref{Cmosquitto}, username::String, password::String)
-    #password != "" && (password = Cstring(C_NULL))
-    msg_nr = ccall((:mosquitto_username_pw_set, libmosquitto), Cint, (Ptr{Cmosquitto}, Cstring, Cstring), client, username, password)
-    return mosq_err_t(msg_nr)
-end
+# TLS support
 
 
 function tls_set(client::Ref{Cmosquitto}, cafile, capath, certfile, keyfile, callback::Ptr{Cvoid})
@@ -181,16 +187,19 @@ function tls_psk_set(client::Ref{Cmosquitto}, psk::String, identity::String, cip
     return mosq_err_t(msg_nr)
 end
 
+# Callbacks
 
-function lib_version()
-    maj = zeros(Int, 1)
-    min = zeros(Int, 1)
-    rev = zeros(Int, 1)
-    ccall((:mosquitto_lib_version, libmosquitto), Cint, (Ptr{Cint}, Ptr{Cint}, Ptr{Cint}), maj, min, rev)
-    return maj[1], min[1], rev[1]
+function connect_callback_set(client::Ref{Cmosquitto}, cfunc)
+    return ccall((:mosquitto_connect_callback_set, libmosquitto), Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}), client, cfunc)
 end
 
 
-function lib_cleanup()
-    ccall((:mosquitto_lib_cleanup, libmosquitto), Cvoid, ())
+function disconnect_callback_set(client::Ref{Cmosquitto}, cfunc)
+    return ccall((:mosquitto_disconnect_callback_set, libmosquitto), Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}), client, cfunc)
+end
+
+
+function message_callback_set(client::Ref{Cmosquitto}, cfunc)
+    ccall((:mosquitto_message_callback_set, libmosquitto), Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}), client, cfunc)
+    return nothing
 end
