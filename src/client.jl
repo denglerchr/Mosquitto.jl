@@ -63,7 +63,7 @@ end
 
 function Client(; id::String = randstring(15))
     # Create mosquitto object and save
-    # id in obj to have it available in callback
+    # pass id as pointer "obj" to have it available in callbacks
     id_ptr = pointer(id)
     cmosc = mosquitto_new(id, true, id_ptr)
 
