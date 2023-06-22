@@ -9,11 +9,15 @@ struct Cobj with fields
 
 Container storing required pointers of the client.
 """
-struct Cobjs
+mutable struct Cobjs
     mosc::Ref{Cmosquitto}
     obj::Ref{Cvoid}
-    conncb::Ref{Cvoid}
-    dconncb::Ref{Cvoid}
+
+    function Cobjs(mosc::Ref{Cmosquitto}, obj::Ref{Cvoid})
+        cobjs = new(mosc, obj)
+        finalizer( x->destroy(x.mosc) , cobjs)
+        return cobjs
+    end
 end
 
 
@@ -37,13 +41,6 @@ end
 
 function show(io::IO, client::Client)
     println("MQTTClient_$(client.id)")
-end
-
-
-# Clean up memory when garbage collected
-function finalizer(client::Client)
-    disconnect(client)
-    destroy(client.cptr.mosc)
 end
 
 
@@ -72,18 +69,16 @@ function Client(; id::String = randstring(15))
     cmosc = mosquitto_new(id, true, cobj)
 
     # Set callbacks
-    #f_message_cb(mos, obj, message) = callback_message(mos, obj, message, id)
     cfunc_message = @cfunction(callback_message, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Ptr{CMosquittoMessage}))
-    message_callback_set(cmosc, cfunc_message)
-
     cfunc_connect = @cfunction(callback_connect, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Cint))
-    connect_callback_set(cmosc, cfunc_connect)
-
     cfunc_disconnect = @cfunction(callback_disconnect, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Cint))
+
+    message_callback_set(cmosc, cfunc_message)
+    connect_callback_set(cmosc, cfunc_connect)
     disconnect_callback_set(cmosc, cfunc_disconnect)
 
     # Create object
-    return Client(id, Cobjs(cmosc, cobj, cfunc_connect, cfunc_disconnect), MoscStatus(false) )
+    return Client(id, Cobjs(cmosc, cobj), MoscStatus(false) )
 end
 
 
