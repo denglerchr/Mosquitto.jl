@@ -14,16 +14,14 @@ client3 = Client("localhost", 1883) # will receive from localhost
 # subscribe to topic different topics for each client
 function subonconnect(c1::Client, c2::Client, c3::Client)
     # check channel, if there is something todo
-    nmessages = Base.n_avail(get_connect_channel())
-    nmessages == 0 && return 0
-    for i = 1:nmessages
+    while !isempty(get_connect_channel())
         conncb = take!(get_connect_channel())
         if conncb.val == 1
-            println("$(conncb.clientptr): connection successfull")
-            conncb.clientptr == c1.cptr.mosc && subscribe(c1, "test/#")
-            conncb.clientptr == c3.cptr.mosc && subscribe(c3, "julia")
+            println("$(conncb.clientid): connection successfull")
+            conncb.clientid == c1.clientid && subscribe(c1, "test/#")
+            conncb.clientid == c3.clientid && subscribe(c3, "julia")
         elseif conncb.val == 0
-            println("$(conncb.clientptr): disconnected")
+            println("$(conncb.clientid): disconnected")
         end
     end
     return 0
@@ -31,11 +29,7 @@ end
 
 # What to do if there is a message
 function onmessage(c1, c2)
-    rand()<0.1 && publish(c1, "test/julia", "From client 1"; retain = false)
-    
-    nmessages = Base.n_avail(get_messages_channel())
-    nmessages == 0 && return 0
-    for i = 1:nmessages
+    while !isempty(get_messages_channel())
         temp = take!(get_messages_channel())
         # Do something with the message
         if temp.topic == "test/julia"
@@ -59,6 +53,7 @@ for i = 1:200
 
     subonconnect(client1, client2, client3)
     onmessage(client1, client2)
+    rand()<0.1 && publish(c1, "test/julia", "From client 1"; retain = false)
 end
 
 

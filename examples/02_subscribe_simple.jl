@@ -14,6 +14,7 @@ function onmessage(nmin)
     for i = 1:nmessages
         temp = take!(Mosquitto.messages_channel)
         println("Message $(nmin + i) of 20:")
+        println("\tClientid: $(temp.clientid)")
         println("\ttopic: $(temp.topic)\tmessage:$(String(temp.payload))")
     end
     return nmessages

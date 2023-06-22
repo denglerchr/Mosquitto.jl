@@ -1,30 +1,27 @@
 """
 struct MessageCB with fields
-* topic:: String
-* payload::Vector{UInt8}
+* clientid::String -> the id of the client that received the message
+* topic:: String -> the topic where the message was received from
+* payload::Vector{UInt8} -> the message content
 
 A struct containing incoming message information and payload.
 """
 struct MessageCB
+    clientid::String
     topic::String
     payload::Vector{UInt8}
 end
 
 """
 struct ConnectionCB with fields
-* clientptr::Ptr
-* val::UInt8
-* returncode::mosq_err_t
-
-The clientptr contains the ptr of the client that connected or disconnected.
-This allows to distinguish between clients.
-val is 0 on disconnect and 1 on connect.
-returncode is the MQTT return code which can be used to identify, e.g., the reason for a disconnect.
+* clientid::String -> the id of the client that had a connection event
+* val::UInt8 -> 0 on disconnect and 1 on connect.
+* returncode::mosq_err_t -> the MQTT return code, possible value in mosq_err_t
 """
 struct ConnectionCB
-    clientptr::Ptr{Cmosquitto}
+    clientid::String
     val::UInt8
-    returncode::mqtt311_connack_codes
+    returncode::mosq_err_t
 end
 
 
@@ -52,34 +49,37 @@ get_connect_channel() = connect_channel
 # messages_channel which is a Channel{Mosquitto.Message}(20)
 # The CMosquittoMessage does not have to be free-ed, it is free-ed by Mosquitto
 # according to https://github.com/eclipse/mosquitto/issues/549
-function callback_message(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, message::Ptr{CMosquittoMessage}) #, clientid::String)
+function callback_message(mos::Ptr{Cmosquitto}, obj::Ptr{UInt8}, message::Ptr{CMosquittoMessage}) #, clientid::String)
     # get topic and payload from the message
     jlmessage = unsafe_load(message)
     jlpayload = [unsafe_load(jlmessage.payload, i) for i = 1:jlmessage.payloadlen]
     topic = unsafe_string(jlmessage.topic)
+    clientid = unsafe_string(obj)
 
     # put it in the channel for further use
     if Base.n_avail(messages_channel)>=messages_channel.sz_max
         popfirst!(messages_channel)
     end
-    put!(messages_channel, MessageCB(topic, jlpayload))
+    put!(messages_channel, MessageCB(clientid, topic, jlpayload))
     return nothing
 end
 
 
-function callback_connect(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, rc::Cint)
+function callback_connect(mos::Ptr{Cmosquitto}, obj::Ptr{UInt8}, rc::Cint)
     if Base.n_avail(connect_channel)>=connect_channel.sz_max
         popfirst!(connect_channel)
     end
-    put!( connect_channel, ConnectionCB(mos, one(UInt8), mqtt311_connack_codes(rc) ) )
+    clientid = unsafe_string(obj)
+    put!( connect_channel, ConnectionCB(clientid, one(UInt8), mosq_err_t(rc) ) )
     return nothing
 end
 
 
-function callback_disconnect(mos::Ptr{Cmosquitto}, obj::Ptr{Cvoid}, rc::Cint)
+function callback_disconnect(mos::Ptr{Cmosquitto}, obj::Ptr{UInt8}, rc::Cint)
     if Base.n_avail(connect_channel)>=connect_channel.sz_max
         popfirst!(connect_channel)
     end
-    put!( connect_channel, ConnectionCB(mos, zero(UInt8), mqtt311_connack_codes(rc) ) )
+    clientid = unsafe_string(obj)
+    put!( connect_channel, ConnectionCB(clientid, zero(UInt8), mosq_err_t(rc) ) )
     return nothing
 end
