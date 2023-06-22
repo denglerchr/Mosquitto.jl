@@ -16,12 +16,12 @@ end
 struct ConnectionCB with fields
 * clientid::String -> the id of the client that had a connection event
 * val::UInt8 -> 0 on disconnect and 1 on connect.
-* returncode::mqtt311_connack_codes -> the MQTT return code, possible value in mqtt311_connack_codes
+* returncode::mosq_err_t -> the MQTT return code, possible value in mosq_err_t
 """
 struct ConnectionCB
     clientid::String
     val::UInt8
-    returncode::mqtt311_connack_codes
+    returncode::mosq_err_t
 end
 
 
@@ -70,7 +70,7 @@ function callback_connect(mos::Ptr{Cmosquitto}, obj::Ptr{UInt8}, rc::Cint)
         popfirst!(connect_channel)
     end
     clientid = unsafe_string(obj)
-    put!( connect_channel, ConnectionCB(clientid, one(UInt8), mqtt311_connack_codes(rc) ) )
+    put!( connect_channel, ConnectionCB(clientid, one(UInt8), mosq_err_t(rc) ) )
     return nothing
 end
 
@@ -80,6 +80,6 @@ function callback_disconnect(mos::Ptr{Cmosquitto}, obj::Ptr{UInt8}, rc::Cint)
         popfirst!(connect_channel)
     end
     clientid = unsafe_string(obj)
-    put!( connect_channel, ConnectionCB(clientid, zero(UInt8), mqtt311_connack_codes(rc) ) )
+    put!( connect_channel, ConnectionCB(clientid, zero(UInt8), mosq_err_t(rc) ) )
     return nothing
 end
