@@ -68,8 +68,7 @@ publish(client, topic, "Another message"; retain = false)
 loop(client; timeout = 500, ntimes = 10)
 
 # 4)
-nmessages = Base.n_avail(Mosquitto.messages_channel)
-for i = 1:nmessages
+while !isempty(Mosquitto.messages_channel)
     msg = take!(Mosquitto.messages_channel) # Tuple{String, Vector{UInt8})
     println("Topic: $(msg.topic)\tMessage: $(String(msg.payload))")
 end
@@ -101,7 +100,7 @@ using Mosquitto
 # Connect to a broker using tls and username/password authetication.
 # The CA certificate can be downloaded from the mosquitto page https://test.mosquitto.org/ssl/mosquitto.org.crt
 # The connect function must be used only after tls_set.
-client = Client()
+client = Client(; id = "JuliaClient1")
 const cafilepath = ... # add path to ca certificate here
 tls_set(client, cafilepath)
 connect(client, "test.mosquitto.org", 8885; username = "rw", password = "readwrite")
@@ -110,18 +109,17 @@ connect(client, "test.mosquitto.org", 8885; username = "rw", password = "readwri
 # To know if there was a connection/disconnection, the channel Mosquitto.connect_channel
 # or get_connect_channel() is used.
 function onconnect(c)
-    # Check if something happened, else return 0
-    nmessages = Base.n_avail(get_connect_channel())
-    nmessages == 0 && return 0
+    nmessages == 0
 
-    # At this point, a connection or disconnection happened
-    for i = 1:nmessages
+    # Treat all events
+    while !isempty(get_connect_channel())
         conncb = take!(get_connect_channel())
+        nmessages += 1
         if conncb.val == 1
-            println("Connection of client $(conncb.clientptr) successfull, subscribing to test/#")
+            println("Connection of client $(conncb.clientid) successfull, subscribing to test/#")
             subscribe(c, "test/#")
         elseif conncb.val == 0
-            println("Client $(conncb.clientptr) disconnected")
+            println("Client $(conncb.clientid) disconnected")
         end
     end
     return nmessages
@@ -132,14 +130,13 @@ end
 # To know if a message was received, we use the Mosquitto.messages_channel
 # or get_messages_channel().
 function onmessage(mrcount)
-    # Check if something happened, else return 0
-    nmessages = Base.n_avail(get_messages_channel())
-    nmessages == 0 && return 0
+    nmessages == 0
 
     # At this point, a message was received, lets process it
-    for i = 1:nmessages
+    while !isempty(get_messages_channel())
         temp = take!(get_messages_channel())
-        println("Message $(mrcount+i):")
+        nmessages += 1
+        println("Message $(mrcount+nmessages):")
         message = String(temp.payload)
         length(message) > 20 && (message = message[1:18]*"...")
         println("\ttopic: $(temp.topic)\tmessage:$(message)")

@@ -2,18 +2,20 @@ import Base.n_avail, Base.show
 
 """
 struct Cobj with fields
-* mosc::Ref{Cmosquitto}
-* obj::Ref{Cvoid}
-* conncb::Ref{Cvoid}
-* dconncb::Ref{Cvoid}
+* mosc::Ptr{Cmosquitto}
+* obj::Ptr{UInt8}
 
 Container storing required pointers of the client.
 """
-struct Cobjs
-    mosc::Ref{Cmosquitto}
-    obj::Ref{Cvoid}
-    conncb::Ref{Cvoid}
-    dconncb::Ref{Cvoid}
+mutable struct Cobjs
+    mosc::Ptr{Cmosquitto}
+    obj::Ptr{UInt8}
+
+    function Cobjs(mosc::Ptr{Cmosquitto}, obj::Ptr{UInt8})
+        cobjs = new(mosc, obj)
+        finalizer( x->destroy(x.mosc) , cobjs)
+        return cobjs
+    end
 end
 
 
@@ -40,13 +42,6 @@ function show(io::IO, client::Client)
 end
 
 
-# Clean up memory when garbage collected
-function finalizer(client::Client)
-    disconnect(client)
-    destroy(client.cptr.mosc)
-end
-
-
 """
     Client(ip::String, port::Int=1883; id::String = randstring(15))
     Client(; id::String = randstring(15))
@@ -67,23 +62,22 @@ function Client(ip::String, port::Int=1883; id::String = randstring(15))
 end
 
 function Client(; id::String = randstring(15))
-    # Create mosquitto object
-    cobj = Ref{Cvoid}()
-    cmosc = mosquitto_new(id, true, cobj)
+    # Create mosquitto object and save
+    # pass id as pointer "obj" to have it available in callbacks
+    id_ptr = pointer(id)
+    cmosc = mosquitto_new(id, true, id_ptr)
 
     # Set callbacks
-    #f_message_cb(mos, obj, message) = callback_message(mos, obj, message, id)
-    cfunc_message = @cfunction(callback_message, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Ptr{CMosquittoMessage}))
+    cfunc_message = @cfunction(callback_message, Cvoid, (Ptr{Cmosquitto}, Ptr{UInt8}, Ptr{CMosquittoMessage}))
+    cfunc_connect = @cfunction(callback_connect, Cvoid, (Ptr{Cmosquitto}, Ptr{UInt8}, Cint))
+    cfunc_disconnect = @cfunction(callback_disconnect, Cvoid, (Ptr{Cmosquitto}, Ptr{UInt8}, Cint))
+
     message_callback_set(cmosc, cfunc_message)
-
-    cfunc_connect = @cfunction(callback_connect, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Cint))
     connect_callback_set(cmosc, cfunc_connect)
-
-    cfunc_disconnect = @cfunction(callback_disconnect, Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}, Cint))
     disconnect_callback_set(cmosc, cfunc_disconnect)
 
     # Create object
-    return Client(id, Cobjs(cmosc, cobj, cfunc_connect, cfunc_disconnect), MoscStatus(false) )
+    return Client(id, Cobjs(cmosc, id_ptr), MoscStatus(false) )
 end
 
 
