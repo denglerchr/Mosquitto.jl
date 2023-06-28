@@ -173,8 +173,9 @@ end
 """
     loop_forever(client::Ref{Cmosquitto}; timeout::Int = 1000)
 
-Blocking, continuously perform network loop. Run in another thread to allow handling messages. Reconnecting is handled, and the function returns after 
-disconnect(client) is called.
+Continuously perform network loop. Reconnecting is handled, and the function returns after 
+disconnect(client) is called. Calls the mosquitto C library using @threadcall to allow
+asynchronous execution.
 """
 function loop_forever(client::Client; timeout::Int = 1000)
     return loop_forever(client.cptr.mosc; timeout = timeout, max_packets = 1)

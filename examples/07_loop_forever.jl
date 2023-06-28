@@ -1,10 +1,6 @@
 # Read 20 messages in topic "test/..." from the public broker test.mosquitto.org
-# This script uses the loop_forever, which is blocking, therefore this needs to run with at least 2 Threads
-if Threads.nthreads() < 2
-    println("This script required at least 2 threads to run correctly")
-    exit(1)
-end
-
+# This script uses the loop_forever instead of calling loop() manually.
+# loop_forever return only when the client disconnects
 using Mosquitto, ThreadPools
 const messages_until_disconnect = 200
 
@@ -39,7 +35,7 @@ function onmessage(client)
         length(message) > 20 && (message = message[1:18]*"...")
         println("\ttopic: $(temp.topic)\tmessage:$(message)")
     end
-    disconnect(client)
+    disconnect(client) # this will later make loop_forever return
     return msgcount
 end
 
@@ -48,8 +44,7 @@ end
 @async onconnect(client)
 @async onmessage(client)
 
-# Loop on thread 2 (blocking) until disconnect is called
-looptask = ThreadPools.@tspawnat 2 (@info "Started loop on thread $(Threads.threadid())"; loop_forever(client)) # will run until disconnect is called
-wait(looptask)
+# Loop until disconnect is called in the onmessage function
+rc = loop_forever(client)
 
 println("Done")
