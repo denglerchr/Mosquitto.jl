@@ -7,12 +7,11 @@ struct Cobj with fields
 
 Container storing required pointers of the client.
 """
-mutable struct Cobjs
+mutable struct Cptrs
     mosc::Ptr{Cmosquitto}
-    obj::Ptr{UInt8}
 
-    function Cobjs(mosc::Ptr{Cmosquitto}, obj::Ptr{UInt8})
-        cobjs = new(mosc, obj)
+    function Cptrs(mosc::Ptr{Cmosquitto})
+        cobjs = new(mosc)
         finalizer( x->destroy(x.mosc) , cobjs)
         return cobjs
     end
@@ -32,8 +31,9 @@ end
 # Client, constructor below
 struct Client
     id::String
-    cptr::Cobjs
     status::MoscStatus
+    cbobjs::CallbackObjs
+    cptr::Cptrs
 end
 
 
@@ -50,9 +50,10 @@ Create a client connection to an MQTT broker. The id should be unique per connec
 client will immediately connect to the broker. Use the version without ip and port if you need to connect with user/password.
 You will have to call the connect(client) function manually.
 """
-function Client(ip::String, port::Int=1883; id::String = randstring(15))
+function Client(ip::String, port::Int=1883; kw...)
+    
     # Create a Client object
-    client = Client( ; id = id )
+    client = Client( ; kw...)
 
     # Try connecting to the broker
     flag = connect(client, ip, port)
@@ -61,24 +62,32 @@ function Client(ip::String, port::Int=1883; id::String = randstring(15))
     return client
 end
 
-function Client(; id::String = randstring(15))
+function Client(; id::String = randstring(15), 
+                    messages_channel::AbstractChannel{MessageCB} = Channel{MessageCB}(20),
+                    autocleanse_message_channel::Bool = false,
+                    connect_channel::AbstractChannel{ConnectionCB} = Channel{ConnectionCB}(5),
+                    autocleanse_connect_channel::Bool = true)
+
     # Create mosquitto object and save
-    # pass id as pointer "obj" to have it available in callbacks
-    id_ptr = pointer(id)
-    cmosc = mosquitto_new(id, true, id_ptr)
+    cbobjs = CallbackObjs(messages_channel, connect_channel, (autocleanse_message_channel, autocleanse_connect_channel))
+    cbobjs_ref = Ref(cbobjs)#pointer_from_objref(channel)
+    cmosc = mosquitto_new(id, true, cbobjs_ref)
 
     # Set callbacks
-    cfunc_message = @cfunction(callback_message, Cvoid, (Ptr{Cmosquitto}, Ptr{UInt8}, Ptr{CMosquittoMessage}))
-    cfunc_connect = @cfunction(callback_connect, Cvoid, (Ptr{Cmosquitto}, Ptr{UInt8}, Cint))
-    cfunc_disconnect = @cfunction(callback_disconnect, Cvoid, (Ptr{Cmosquitto}, Ptr{UInt8}, Cint))
+    cfunc_message = @cfunction(callback_message, Cvoid, (Ptr{Cmosquitto}, Ptr{CallbackObjs}, Ptr{CMosquittoMessage}))
+    cfunc_connect = @cfunction(callback_connect, Cvoid, (Ptr{Cmosquitto}, Ptr{CallbackObjs}, Cint))
+    cfunc_disconnect = @cfunction(callback_disconnect, Cvoid, (Ptr{Cmosquitto}, Ptr{CallbackObjs}, Cint))
 
     message_callback_set(cmosc, cfunc_message)
     connect_callback_set(cmosc, cfunc_connect)
     disconnect_callback_set(cmosc, cfunc_disconnect)
 
     # Create object
-    return Client(id, Cobjs(cmosc, id_ptr), MoscStatus(false) )
+    return Client(id, MoscStatus(false), cbobjs, Cptrs(cmosc) )
 end
+
+get_messages_channel(client::Client) = client.cbobjs.messages_channel
+get_connect_channel(client::Client) = client.cbobjs.connect_channel
 
 
 """

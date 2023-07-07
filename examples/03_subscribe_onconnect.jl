@@ -5,33 +5,33 @@ using Mosquitto
 client = Client("test.mosquitto.org", 1883)
 
 # subscribe to topic "test" every time the client connects
-function onconnect(c)
+function onconnect(client)
     # Check if something happened, else return 0
-    nmessages = Base.n_avail(get_connect_channel())
+    nmessages = Base.n_avail(get_connect_channel(client))
     nmessages == 0 && return 0
 
     # At this point, a connection or disconnection happened
-    for i = 1:nmessages
-        conncb = take!(get_connect_channel())
+    for _ = 1:nmessages
+        conncb = take!(get_connect_channel(client))
         if conncb.val == 1
-            println("Connection of client $(conncb.clientid) successfull (return code $(conncb.returncode)), subscribing to test/#")
-            subscribe(c, "test/#")
+            println("Connection of client $(client.id) successfull (return code $(conncb.returncode)), subscribing to test/#")
+            subscribe(client, "test/#")
         elseif conncb.val == 0
-            println("Client $(conncb.clientid) disconnected")
+            println("Client $(client.id) disconnected")
         end
     end
     return nmessages
 end
 
 
-function onmessage(mrcount)
+function onmessage(mrcount, client)
     # Check if something happened, else return 0
-    nmessages = Base.n_avail(get_messages_channel())
+    nmessages = Base.n_avail(get_messages_channel(client))
     nmessages == 0 && return 0
 
     # At this point, a message was received, lets process it
     for i = 1:nmessages
-        temp = take!(get_messages_channel())
+        temp = take!(get_messages_channel(client))
         println("Message $(mrcount+i):")
         message = String(temp.payload)
         length(message) > 20 && (message = message[1:18]*"...")
@@ -47,7 +47,7 @@ mrcount = 0
 while mrcount < 20
     loop(client) # network loop
     onconnect(client) # check for connection/disconnection
-    mrcount += onmessage(mrcount) # check for messages
+    mrcount += onmessage(mrcount, client) # check for messages
 end
 
 # Close everything

@@ -11,15 +11,14 @@ client1 = Client("test.mosquitto.org", 1883) # will receive message
 client2 = Client("localhost", 1883) # will publish to localhost
 client3 = Client("localhost", 1883) # will receive from localhost
 
-# subscribe to topic different topics for each client
-function subonconnect(c1::Client, c2::Client, c3::Client)
+# subscribe to a topic on connection event
+function subonconnect(client::Client, topic::String)
     # check channel, if there is something todo
-    while !isempty(get_connect_channel())
-        conncb = take!(get_connect_channel())
+    while !isempty(get_connect_channel(client))
+        conncb = take!(get_connect_channel(client))
         if conncb.val == 1
-            println("$(conncb.clientid): connection successfull")
-            conncb.clientid == c1.clientid && subscribe(c1, "test/#")
-            conncb.clientid == c3.clientid && subscribe(c3, "julia")
+            println("$(client.id): connection successfull")
+            subscribe(client, topic)
         elseif conncb.val == 0
             println("$(conncb.clientid): disconnected")
         end
@@ -27,19 +26,30 @@ function subonconnect(c1::Client, c2::Client, c3::Client)
     return 0
 end
 
-# What to do if there is a message
-function onmessage(c1, c2)
-    while !isempty(get_messages_channel())
-        temp = take!(get_messages_channel())
+# Replicate messages from client1 to client2
+function forwardmessages(client1, client2)
+    while !isempty(get_messages_channel(client1))
+        temp = take!(get_messages_channel(client1))
         # Do something with the message
         if temp.topic == "test/julia"
-            println("\ttopic: $(temp.topic)\tmessage:$(String(temp.payload))")
-            publish(c2, "julia", "From client 2"; qos = 2)
-        elseif temp.topic == "julia"
-            println("\ttopic: $(temp.topic)\tmessage:$(String(temp.payload))")
-        else
-            println("Wrong topic :(")
+            msg = String(temp.payload)
+            println("Message from client $(client.id)")
+            println("\ttopic: $(temp.topic)\tmessage:$msg")
+
+            # republish
+            publish(client2, "julia", "From client 2: $msg"; qos = 2)
         end
+    end
+    return 0
+end
+
+function printmessages(client)
+    while !isempty(get_messages_channel(client))
+        temp = take!(get_messages_channel(client))
+        
+        msg = String(temp.payload)
+        println("Message from client $(client.id)")
+        println("\ttopic: $(temp.topic)\tmessage:$msg")
     end
     return 0
 end
@@ -51,9 +61,11 @@ for i = 1:200
     loop(client2; timeout = 100)
     loop(client3; timeout = 100)
 
-    subonconnect(client1, client2, client3)
-    onmessage(client1, client2)
-    rand()<0.1 && publish(c1, "test/julia", "From client 1"; retain = false)
+    subonconnect(client1, "test/#")
+    subonconnect(client3, "julia")
+    forwardmessages(client1, client2)
+    printmessages(client3)
+    rand()<0.1 && publish(client1, "test/julia", "From client 1"; retain = false)
 end
 
 

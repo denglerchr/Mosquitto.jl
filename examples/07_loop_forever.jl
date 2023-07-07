@@ -1,7 +1,7 @@
 # Read 20 messages in topic "test/..." from the public broker test.mosquitto.org
 # This script uses the loop_forever instead of calling loop() manually.
 # loop_forever return only when the client disconnects
-using Mosquitto, ThreadPools
+using Mosquitto
 const messages_until_disconnect = 200
 
 # Connect to a broker
@@ -11,12 +11,12 @@ client = Client("test.mosquitto.org", 1883)
 function onconnect(client)
     disconnect = false
     while !disconnect
-        conncb = take!(get_connect_channel())
+        conncb = take!(get_connect_channel(client))
         if conncb.val == 1
-            println("Connection of client $(conncb.clientid) successfull ($(conncb.returncode)), subscribing to test/#")
+            println("Connection of client $(client.id) successfull ($(conncb.returncode)), subscribing to test/#")
             subscribe(client, "test/#")
         elseif conncb.val == 0
-            println("Client $(conncb.clientid) disconnected ($(conncb.returncode))")
+            println("Client $(client.id) disconnected ($(conncb.returncode))")
             disconnect = true
         end
     end
@@ -28,7 +28,7 @@ end
 function onmessage(client)
     msgcount = 0
     while msgcount < messages_until_disconnect
-        temp = take!(get_messages_channel())
+        temp = take!(get_messages_channel(client))
         msgcount += 1
         println("Message $(msgcount):")
         message = String(temp.payload)
