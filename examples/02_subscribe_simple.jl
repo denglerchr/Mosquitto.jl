@@ -7,26 +7,26 @@ client = Client("test.mosquitto.org", 1883)
 # subscribe to topic "test"
 subscribe(client, "test/#")
 
-function onmessage(nmin)
-    nmessages = Base.n_avail(Mosquitto.messages_channel)
+function onmessage(nmin, client)
+    messages_channel = get_messages_channel(client)
+    nmessages = Base.n_avail(messages_channel)
     nmessages == 0 && return 0
 
     for i = 1:nmessages
-        temp = take!(Mosquitto.messages_channel)
+        temp = take!(messages_channel)
         println("Message $(nmin + i) of 20:")
-        println("\tClientid: $(temp.clientid)")
         println("\ttopic: $(temp.topic)\tmessage:$(String(temp.payload))")
     end
     return nmessages
 end
 
 # Messages will be put in
-# the channel Mosquitto.messages_channel.
+# the clients channel.
 nmessages = 0
 while nmessages<20
     # Take the message on arrival
     loop(client)
-    nmessages += onmessage(nmessages)
+    nmessages += onmessage(nmessages, client)
 end
 
 # Close everything

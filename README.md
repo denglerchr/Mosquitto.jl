@@ -68,8 +68,9 @@ publish(client, topic, "Another message"; retain = false)
 loop(client; timeout = 500, ntimes = 10)
 
 # 4)
-while !isempty(Mosquitto.messages_channel)
-    msg = take!(Mosquitto.messages_channel) # Tuple{String, Vector{UInt8})
+msg_channel = get_messages_channel(client)
+while !isempty(msg_channel)
+    msg = take!(msg_channel) # Tuple{String, Vector{UInt8})
     println("Topic: $(msg.topic)\tMessage: $(String(msg.payload))")
 end
 ```
@@ -77,10 +78,12 @@ end
 ## Advanced Usage and Notes
 
 ### Callbacks on messages or connection/disconnection
-While the mosquitto C library requires callback functions, this package uses Channels to indicate the receiving of a message or the connection/disconnection to/from a broker. You should `take!(channel)` on these, possibly after checking for the number of available messages if not run in a separate thread. The two channels can be accessed via:
-* `get_messages_channel()` or `Mosquitto.messages_channel`
-* `get_connect_channel()` or `Mosquitto.connect_channel`
-To awaid blocking when channels are full due to too many messages, they are treated similar as circular buffers, i.e., first item is removed if channel is full and a new item is pushed.
+While the mosquitto C library requires callback functions, this package uses Channels to indicate the receiving of a message or the connection/disconnection to/from a broker. You should `take!(channel)` on these, possibly after checking for the number of available messages if not run in a separate thread. Each client contains 2 channels can be accessed via:
+* `get_messages_channel(client)`
+* `get_connect_channel(client)`
+To awaid blocking when channels are full due to too many messages, they can be treated similar as circular buffers, i.e., first item is removed if channel is full and a new item is pushed. The options to activate this behavior are keyword options of the Client constructor
+* `autocleanse_message_channel`
+* `autocleanse_connect_channel`
 
 ### Running the loop continuously
 The network loop needs to be called continuously in order to send receive messages. The simplest way to do this
@@ -101,25 +104,26 @@ using Mosquitto
 # The CA certificate can be downloaded from the mosquitto page https://test.mosquitto.org/ssl/mosquitto.org.crt
 # The connect function must be used only after tls_set.
 client = Client(; id = "JuliaClient1")
-const cafilepath = ... # add path to ca certificate here
+const cafilepath = "..." # add path to ca certificate here
 tls_set(client, cafilepath)
 connect(client, "test.mosquitto.org", 8885; username = "rw", password = "readwrite")
 
+
 # Subscribe to topic "test" every time the client connects
-# To know if there was a connection/disconnection, the channel Mosquitto.connect_channel
-# or get_connect_channel() is used.
+# To know if there was a connection/disconnection, the channel
+# get_connect_channel(client) is used.
 function onconnect(c)
     nmessages == 0
 
     # Treat all events
-    while !isempty(get_connect_channel())
-        conncb = take!(get_connect_channel())
+    while !isempty(get_connect_channel(c))
+        conncb = take!(get_connect_channel(c))
         nmessages += 1
         if conncb.val == 1
-            println("Connection of client $(conncb.clientid) successfull, subscribing to test/#")
+            println("Connection of client $(client.id) successfull, subscribing to test/#")
             subscribe(c, "test/#")
         elseif conncb.val == 0
-            println("Client $(conncb.clientid) disconnected")
+            println("Client $(client.id) disconnected")
         end
     end
     return nmessages
@@ -127,14 +131,15 @@ end
 
 
 # Print a message if it is received.
-# To know if a message was received, we use the Mosquitto.messages_channel
-# or get_messages_channel().
-function onmessage(mrcount)
+# To know if a message was received, we check
+# the channel msg_channel = get_messages_channel(client).
+function onmessage(mrcount, client)
     nmessages == 0
+    msg_channel = get_messages_channel(client)
 
     # At this point, a message was received, lets process it
-    while !isempty(get_messages_channel())
-        temp = take!(get_messages_channel())
+    while !isempty(msg_channel)
+        temp = take!(msg_channel)
         nmessages += 1
         println("Message $(mrcount+nmessages):")
         message = String(temp.payload)
@@ -151,7 +156,7 @@ mrcount = 0
 while mrcount < 20
     loop(client) # network loop
     onconnect(client) # check for connection/disconnection
-    mrcount += onmessage(mrcount) # check for messages
+    mrcount += onmessage(mrcount, client) # check for messages
 end
 
 # Disconnect the client
