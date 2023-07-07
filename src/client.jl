@@ -66,7 +66,7 @@ function Client(; id::String = randstring(15),
                     messages_channel::AbstractChannel{MessageCB} = Channel{MessageCB}(20),
                     autocleanse_message_channel::Bool = false,
                     connect_channel::AbstractChannel{ConnectionCB} = Channel{ConnectionCB}(5),
-                    autocleanse_connect_channel::Bool = true)
+                    autocleanse_connect_channel::Bool = false)
 
     # Create mosquitto object and save
     cbobjs = CallbackObjs(messages_channel, connect_channel, (autocleanse_message_channel, autocleanse_connect_channel))
