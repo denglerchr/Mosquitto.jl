@@ -144,7 +144,7 @@ function publish(client::Client, topic::String, payload; qos::Int = 1, retain::B
 
     # possibly wait for message to be sent successfully to broker
     if waitcb
-        mid2 = mid.x - 1
+        mid2 = mid.x - Cint(1)
         while mid.x != mid2
             mid2 = take!(client.cbobjs.pub_channel)
         end
