@@ -78,10 +78,11 @@ end
 ## Advanced Usage and Notes
 
 ### Callbacks on messages or connection/disconnection
-While the mosquitto C library requires callback functions, this package uses Channels to indicate the receiving of a message or the connection/disconnection to/from a broker. You should `take!(channel)` on these, possibly after checking for the number of available messages if not run in a separate thread. Each client contains 2 channels can be accessed via:
+While the mosquitto C library requires callback functions, this package uses Channels to indicate the receiving of a message or the connection/disconnection to/from a broker. You should `take!(channel)` on these, possibly after checking for the number of available messages if not run in a separate thread. Each client contains 3 channels (one is reserved for internal use) of which the 2 important ones can be accessed via:
 * `get_messages_channel(client)`
 * `get_connect_channel(client)`
-To awaid blocking when channels are full due to too many messages, they can be treated similar as circular buffers, i.e., first item is removed if channel is full and a new item is pushed. The options to activate this behavior are keyword options of the Client constructor
+
+To awaid blocking when channels are full due to too many messages, the channels can be treated similar as circular buffers, i.e., first item is removed if the channel is full and a new item is pushed. The options to activate this behavior are keyword options of the Client constructor
 * `autocleanse_message_channel`
 * `autocleanse_connect_channel`
 

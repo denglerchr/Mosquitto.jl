@@ -3,7 +3,6 @@ import Base.n_avail, Base.show
 """
 struct Cobj with fields
 * mosc::Ptr{Cmosquitto}
-* obj::Ptr{UInt8}
 
 Container storing required pointers of the client.
 """
@@ -18,20 +17,10 @@ mutable struct Cptrs
 end
 
 
-"""
-struct MoscStatus with fields
-* conn_status::Bool
-
-Container storing status flags
-"""
-mutable struct MoscStatus
-    conn_status::Bool
-end
-
 # Client, constructor below
 struct Client
     id::String
-    status::MoscStatus
+    conn_status::Base.RefValue{Bool}
     cbobjs::CallbackObjs
     cptr::Cptrs
 end
@@ -43,12 +32,19 @@ end
 
 
 """
-    Client(ip::String, port::Int=1883; id::String = randstring(15))
-    Client(; id::String = randstring(15))
+    Client(ip::String, port::Int=1883; kw...)
+    Client(; kw...)
 
 Create a client connection to an MQTT broker. The id should be unique per connection. If ip and port are specified, the
 client will immediately connect to the broker. Use the version without ip and port if you need to connect with user/password.
 You will have to call the connect(client) function manually.
+Available keyword arguments:
+* `id`::String : the id of the client
+* `messages_channel`::AbstractChannel{MessageCB} : a channel that is receiving incoming messages
+* `autocleanse_message_channel`::Bool : default false, if true, automatically remove old messages if the `messages_channel` is full
+* `connect_channel`::AbstractChannel{ConnectionCB} : a channel that is receiving incoming connect/disconnect events
+* `autocleanse_connect_channel`::Bool : default false, if true, automatically remove old messages if the `connect_channel` is full
+* `pub_channel`::AbstractChannel{Cint} : a channel that is receiving message ids for successfully published messages
 """
 function Client(ip::String, port::Int=1883; kw...)
     
@@ -66,24 +62,27 @@ function Client(; id::String = randstring(15),
                     messages_channel::AbstractChannel{MessageCB} = Channel{MessageCB}(20),
                     autocleanse_message_channel::Bool = false,
                     connect_channel::AbstractChannel{ConnectionCB} = Channel{ConnectionCB}(5),
-                    autocleanse_connect_channel::Bool = false)
+                    autocleanse_connect_channel::Bool = false,
+                    pub_channel::AbstractChannel{Cint} = Channel{Cint}(5))
 
     # Create mosquitto object and save
-    cbobjs = CallbackObjs(messages_channel, connect_channel, (autocleanse_message_channel, autocleanse_connect_channel))
+    cbobjs = CallbackObjs(messages_channel, connect_channel, pub_channel, (autocleanse_message_channel, autocleanse_connect_channel))
     cbobjs_ref = Ref(cbobjs)#pointer_from_objref(channel)
     cmosc = mosquitto_new(id, true, cbobjs_ref)
 
     # Set callbacks
     cfunc_message = @cfunction(callback_message, Cvoid, (Ptr{Cmosquitto}, Ptr{CallbackObjs}, Ptr{CMosquittoMessage}))
+    cfunc_publish = @cfunction(callback_publish, Cvoid, (Ptr{Cmosquitto}, Ptr{CallbackObjs}, Cint))
     cfunc_connect = @cfunction(callback_connect, Cvoid, (Ptr{Cmosquitto}, Ptr{CallbackObjs}, Cint))
     cfunc_disconnect = @cfunction(callback_disconnect, Cvoid, (Ptr{Cmosquitto}, Ptr{CallbackObjs}, Cint))
 
     message_callback_set(cmosc, cfunc_message)
+    publish_callback_set(cmosc, cfunc_publish)
     connect_callback_set(cmosc, cfunc_connect)
     disconnect_callback_set(cmosc, cfunc_disconnect)
 
     # Create object
-    return Client(id, MoscStatus(false), cbobjs, Cptrs(cmosc) )
+    return Client(id, Ref(false), cbobjs, Cptrs(cmosc) )
 end
 
 get_messages_channel(client::Client) = client.cbobjs.messages_channel
@@ -104,7 +103,7 @@ function connect(client::Client, ip::String, port::Int; username::String = "", p
         flag != MOSQ_ERR_SUCCESS && @warn("Couldnt set password and username, error $flag")
     end
     flag = connect(client.cptr.mosc, ip; port = port, keepalive = keepalive)
-    flag == MOSQ_ERR_SUCCESS ? (client.status.conn_status = true) : @warn("Connection to broker failed, error $flag")
+    flag == MOSQ_ERR_SUCCESS ? (client.conn_status.x = true) : @warn("Connection to broker failed, error $flag")
     return flag
 end
 
@@ -116,7 +115,7 @@ Disconnect the client.
 """
 function disconnect(client::Client)
     flag = disconnect(client.cptr.mosc)
-    flag == MOSQ_ERR_SUCCESS && (client.status.conn_status = false)
+    flag == MOSQ_ERR_SUCCESS && (client.conn_status.x = false)
     return flag
 end
 
@@ -126,17 +125,32 @@ end
 """
 function reconnect(client::Client)
     flag = reconnect(client.cptr.mosc)
-    flag == MOSQ_ERR_SUCCESS && (client.status.conn_status = true)
+    flag == MOSQ_ERR_SUCCESS && (client.conn_status.x = true)
     return flag
 end
 
 
 """
-    publish(client::Client, topic::String, payload; qos::Int = 1, retain::Bool = false)
+    publish(client::Client, topic::String, payload; kw...)
 
-Publish a message to the broker. 
+Publish a message to the broker. Keyword arguments
+* qos::Int = 1 : Quality of service
+* retain::Bool = false : if true, the broker will store this message
+* waitcb = false : if true, wait until the message was received by the broker to return. If set to true, the network loop must run asynchronously, else the function might just block forever.
 """
-publish(client::Client, topic::String, payload; qos::Int = 1, retain::Bool = false) = publish(client.cptr.mosc, topic, payload; qos = qos, retain = retain)
+function publish(client::Client, topic::String, payload; qos::Int = 1, retain::Bool = false, waitcb::Bool = false) 
+    mid = Ref(zero(Cint)) # message id
+    rv = publish(client.cptr.mosc, mid, topic, payload; qos = qos, retain = retain)
+
+    # possibly wait for message to be sent successfully to broker
+    if waitcb
+        mid2 = mid.x - 1
+        while mid.x != mid2
+            mid2 = take!(client.cbobjs.pub_channel)
+        end
+    end
+    return rv
+end
 
 
 """
@@ -166,7 +180,7 @@ function loop(client::Client; timeout::Int = 1000, ntimes::Int = 1, autoreconnec
         out = loop(client.cptr.mosc; timeout = timeout)
         if autoreconnect && out == MOSQ_ERR_CONN_LOST
             flag = reconnect(client)
-            client.status.conn_status = ifelse( flag == MOSQ_ERR_SUCCESS, true, false )  
+            client.conn_status.x = ifelse( flag == MOSQ_ERR_SUCCESS, true, false )  
         end
     end
     return out

@@ -30,6 +30,7 @@ as pointers
 struct CallbackObjs
     messages_channel::AbstractChannel{MessageCB}
     connect_channel::AbstractChannel{ConnectionCB}
+    pub_channel::AbstractChannel{Cint}
     autocleanse::Tuple{Bool, Bool}
 end
 
@@ -50,6 +51,16 @@ function callback_message(mos::Ptr{Cmosquitto}, obj::Ptr{CallbackObjs}, message:
         popfirst!(cbobjs.messages_channel)
     end
     put!(cbobjs.messages_channel, MessageCB( topic, jlpayload))
+    return nothing
+end
+
+
+function callback_publish(mos::Ptr{Cmosquitto}, obj::Ptr{CallbackObjs}, mid::Cint)
+    cbobjs = unsafe_load(obj)
+    if Base.n_avail(cbobjs.pub_channel)>=cbobjs.pub_channel.sz_max
+        popfirst!(cbobjs.pub_channel)
+    end
+    put!( cbobjs.pub_channel, mid )
     return nothing
 end
 

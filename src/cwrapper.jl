@@ -114,10 +114,9 @@ end
 
 # Publishing, subscribing, unsubscribing
 
-function publish(client::Ref{Cmosquitto}, topic::String, payload; qos::Int = 1, retain::Bool = true)
+function publish(client::Ref{Cmosquitto}, mid, topic::String, payload; qos::Int = 1, retain::Bool = true)
     payloadnew = getbytes(payload)
     payloadlen = length(payloadnew) # dont use sizeof, as payloadnew might be of type "reinterpreted"
-    mid = Int[0]
     msg_nr = ccall((:mosquitto_publish, libmosquitto), Cint,
     (Ptr{Cmosquitto}, Ptr{Cint}, Cstring, Cint, Ptr{UInt8}, Cint, Bool), 
     client, mid, topic, payloadlen, payloadnew, qos, retain)
@@ -182,6 +181,7 @@ function tls_psk_set(client::Ref{Cmosquitto}, psk::String, identity::String, cip
     return mosq_err_t(msg_nr)
 end
 
+
 function tls_psk_set(client::Ref{Cmosquitto}, psk::String, identity::String, ciphers::String)
     msg_nr = ccall((:mosquitto_tls_psk_set, libmosquitto), Cint, (Ptr{Cmosquitto}, Cstring, Cstring, Cstring), client, psk, identity, ciphers)
     return mosq_err_t(msg_nr)
@@ -196,6 +196,11 @@ end
 
 function disconnect_callback_set(client::Ref{Cmosquitto}, cfunc)
     return ccall((:mosquitto_disconnect_callback_set, libmosquitto), Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}), client, cfunc)
+end
+
+
+function publish_callback_set(client::Ref{Cmosquitto}, cfunc)
+    return ccall((:mosquitto_publish_callback_set, libmosquitto), Cvoid, (Ptr{Cmosquitto}, Ptr{Cvoid}), client, cfunc)
 end
 
 
