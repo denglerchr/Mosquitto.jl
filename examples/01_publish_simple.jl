@@ -1,6 +1,6 @@
 using Mosquitto, Dates
 
-# connect to a broker, also start loop if Threads.nthreads() > 1
+# connect to a broker
 client = Client("test.mosquitto.org")
 
 topic = "test/julia"

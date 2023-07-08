@@ -24,6 +24,6 @@ export lib_version
 include("callbacks.jl")
 
 include("client.jl")
-export Client, get_messages_channel, get_connect_channel, connect, reconnect, disconnect, publish, subscribe, unsubscribe, loop, loop_forever, tls_set, tls_psk_set
+export Client, get_messages_channel, get_connect_channel, connect, reconnect, disconnect, publish, subscribe, unsubscribe, loop, loop_forever, loop_forever2, tls_set, tls_psk_set
 
 end # module

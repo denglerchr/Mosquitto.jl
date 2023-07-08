@@ -11,7 +11,7 @@ mutable struct Cptrs
 
     function Cptrs(mosc::Ptr{Cmosquitto})
         cobjs = new(mosc)
-        finalizer( x->destroy(x.mosc) , cobjs)
+        finalizer( x->(disconnect(x.mosc); destroy(x.mosc)) , cobjs)
         return cobjs
     end
 end
@@ -143,7 +143,7 @@ function publish(client::Client, topic::String, payload; qos::Int = 1, retain::B
     rv = publish(client.cptr.mosc, mid, topic, payload; qos = qos, retain = retain)
 
     # possibly wait for message to be sent successfully to broker
-    if waitcb
+    if waitcb && (rv == MOSQ_ERR_SUCCESS)
         mid2 = mid.x - Cint(1)
         while mid.x != mid2
             mid2 = take!(client.cbobjs.pub_channel)
@@ -193,9 +193,27 @@ end
 Continuously perform network loop. Reconnecting is handled, and the function returns after 
 disconnect(client) is called. Calls the mosquitto C library using @threadcall to allow
 asynchronous execution.
+This function segfaults on older Julia versions, a Mosquitto.loop_forever2(client) functions can
+be used for a worse performance, but more stable version of it.
 """
 function loop_forever(client::Client; timeout::Int = 1000)
     return loop_forever(client.cptr.mosc; timeout = timeout, max_packets = 1)
+end
+
+
+"""
+loop_forever2(client::Ref{Cmosquitto}; timeout::Int = 10)
+
+Continuously perform network loop. Reconnecting is handled, and the function returns after 
+disconnect(client) is called. This is a slower version of loop_forever, however it works on older Julia versions.
+"""
+function loop_forever2(client::Client; timeout::Int = 10)
+    rc = MOSQ_ERR_SUCCESS
+    while rc != MOSQ_ERR_NO_CONN
+        rc = loop(client; timeout = timeout)
+        yield()
+    end
+    return MOSQ_ERR_SUCCESS
 end
 
 
