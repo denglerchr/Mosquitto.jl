@@ -24,8 +24,14 @@ end
 
 
 """
-Contains Julia objects used in the callback function and passed
-as pointers
+struct CallbackObjs with fields
+* messages_channel::AbstractChannel{MessageCB}
+* connect_channel::AbstractChannel{ConnectionCB}
+* pub_channel::AbstractChannel{Cint}
+* autocleanse::Tuple{Bool, Bool}
+
+Contains Julia objects used in the Mosquitto callback functions. Passed to the
+callback functions as a pointer.
 """
 struct CallbackObjs
     messages_channel::AbstractChannel{MessageCB}
