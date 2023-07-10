@@ -5,7 +5,7 @@ module Mosquitto
 
 import Base: finalizer
 import mosquitto_client_jll: libmosquitto
-using Random, Libdl
+using Random
 
 
 function __init__()
