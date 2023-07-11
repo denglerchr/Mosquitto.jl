@@ -25,18 +25,18 @@ end
 
 """
 struct CallbackObjs with fields
-* messages_channel::AbstractChannel{MessageCB}
-* connect_channel::AbstractChannel{ConnectionCB}
-* pub_channel::AbstractChannel{Cint}
+* messages_channel::Channel{MessageCB}
+* connect_channel::Channel{ConnectionCB}
+* pub_channel::Channel{Cint}
 * autocleanse::Tuple{Bool, Bool}
 
 Contains Julia objects used in the Mosquitto callback functions. Passed to the
 callback functions as a pointer.
 """
 struct CallbackObjs
-    messages_channel::AbstractChannel{MessageCB}
-    connect_channel::AbstractChannel{ConnectionCB}
-    pub_channel::AbstractChannel{Cint}
+    messages_channel::Channel{MessageCB}
+    connect_channel::Channel{ConnectionCB}
+    pub_channel::Channel{Cint}
     autocleanse::Tuple{Bool, Bool}
 end
 

@@ -40,11 +40,11 @@ client will immediately connect to the broker. Use the version without ip and po
 You will have to call the connect(client) function manually.
 Available keyword arguments:
 * `id`::String : the id of the client
-* `messages_channel`::AbstractChannel{MessageCB} : a channel that is receiving incoming messages
+* `messages_channel`::Channel{MessageCB} : a channel that is receiving incoming messages
 * `autocleanse_message_channel`::Bool : default false, if true, automatically remove old messages if the `messages_channel` is full
-* `connect_channel`::AbstractChannel{ConnectionCB} : a channel that is receiving incoming connect/disconnect events
+* `connect_channel`::Channel{ConnectionCB} : a channel that is receiving incoming connect/disconnect events
 * `autocleanse_connect_channel`::Bool : default false, if true, automatically remove old messages if the `connect_channel` is full
-* `pub_channel`::AbstractChannel{Cint} : a channel that is receiving message ids for successfully published messages
+* `pub_channel`::Channel{Cint} : a channel that is receiving message ids for successfully published messages
 """
 function Client(ip::String, port::Int=1883; kw...)
     
@@ -59,11 +59,11 @@ function Client(ip::String, port::Int=1883; kw...)
 end
 
 function Client(; id::String = randstring(15), 
-                    messages_channel::AbstractChannel{MessageCB} = Channel{MessageCB}(20),
+                    messages_channel::Channel{MessageCB} = Channel{MessageCB}(20),
                     autocleanse_message_channel::Bool = false,
-                    connect_channel::AbstractChannel{ConnectionCB} = Channel{ConnectionCB}(5),
+                    connect_channel::Channel{ConnectionCB} = Channel{ConnectionCB}(5),
                     autocleanse_connect_channel::Bool = false,
-                    pub_channel::AbstractChannel{Cint} = Channel{Cint}(5))
+                    pub_channel::Channel{Cint} = Channel{Cint}(5))
 
     # Create mosquitto object and save
     cbobjs = CallbackObjs(messages_channel, connect_channel, pub_channel, (autocleanse_message_channel, autocleanse_connect_channel))
