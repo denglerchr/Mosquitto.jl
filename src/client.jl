@@ -8,9 +8,10 @@ Container storing required pointers of the client.
 """
 mutable struct Cptrs
     mosc::Ptr{Cmosquitto}
+    callbackobjs::Base.RefValue{CallbackObjs}
 
-    function Cptrs(mosc::Ptr{Cmosquitto})
-        cobjs = new(mosc)
+    function Cptrs(mosc::Ptr{Cmosquitto}, cbobjs)
+        cobjs = new(mosc, cbobjs)
         finalizer( x->(disconnect(x.mosc); destroy(x.mosc)) , cobjs)
         return cobjs
     end
@@ -82,7 +83,7 @@ function Client(; id::String = randstring(15),
     disconnect_callback_set(cmosc, cfunc_disconnect)
 
     # Create object
-    return Client(id, Ref(false), cbobjs, Cptrs(cmosc) )
+    return Client(id, Ref(false), cbobjs, Cptrs(cmosc, cbobjs_ref) )
 end
 
 get_messages_channel(client::Client) = client.cbobjs.messages_channel
