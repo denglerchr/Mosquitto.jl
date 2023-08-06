@@ -49,15 +49,25 @@ end
 	MOSQ_ERR_ALREADY_EXISTS = 31
 end
 
-# connack codes for MQTT3.1 and 3.1.1 from mosquitto.h
-@enum mqtt311_connack_codes::Cint begin
-	CONNACK_ACCEPTED = 0
-	CONNACK_REFUSED_PROTOCOL_VERSION = 1
-	CONNACK_REFUSED_IDENTIFIER_REJECTED = 2
-	CONNACK_REFUSED_SERVER_UNAVAILABLE = 3
-	CONNACK_REFUSED_BAD_USERNAME_PASSWORD = 4
-	CONNACK_REFUSED_NOT_AUTHORIZED = 5
+@enum mosq_opt_t::Cint begin
+	MOSQ_OPT_PROTOCOL_VERSION = 1
+	MOSQ_OPT_SSL_CTX = 2
+	MOSQ_OPT_SSL_CTX_WITH_DEFAULTS = 3
+	MOSQ_OPT_RECEIVE_MAXIMUM = 4
+	MOSQ_OPT_SEND_MAXIMUM = 5
+	MOSQ_OPT_TLS_KEYFORM = 6
+	MOSQ_OPT_TLS_ENGINE = 7
+	MOSQ_OPT_TLS_ENGINE_KPASS_SHA1 = 8
+	MOSQ_OPT_TLS_OCSP_REQUIRED = 9
+	MOSQ_OPT_TLS_ALPN = 10
+	MOSQ_OPT_TCP_NODELAY = 11
+	MOSQ_OPT_BIND_ADDRESS = 12
+	MOSQ_OPT_TLS_USE_OS_CERTS = 13
 end
+
+const MQTT_PROTOCOL_V31 = 3
+const MQTT_PROTOCOL_V311 = 4
+const MQTT_PROTOCOL_V5 = 5
 
 # Library version, init, and cleanup
 
@@ -69,6 +79,10 @@ function lib_version()
     return maj[1], min[1], rev[1]
 end
 
+function lib_init()
+    msg_nr = ccall((:mosquitto_lib_init, libmosquitto), Cint, ()) 
+    return mosq_err_t(msg_nr)
+end
 
 function lib_cleanup()
     ccall((:mosquitto_lib_cleanup, libmosquitto), Cvoid, ())
@@ -83,6 +97,22 @@ end
 
 function destroy(client::Ref{Cmosquitto})
     return ccall((:mosquitto_destroy, libmosquitto), Cvoid, (Ptr{Cmosquitto},), client)
+end
+
+# Will
+
+function will_set(client::Ref{Cmosquitto}, topic::String, payload; qos::Int=1, retain::Bool = false)
+    payloadnew = getbytes(payload)
+    payloadlen = length(payloadnew) # dont use sizeof, as payloadnew might be of type "reinterpreted"
+    msg_nr = ccall((:mosquitto_will_set, libmosquitto), Cint,
+                    (Ptr{Cmosquitto}, Cstring, Cint, Ptr{UInt8}, Cint, Bool), 
+                    client, topic, payloadlen, payloadnew, qos, retain)
+    return mosq_err_t(msg_nr)
+end
+
+function will_clear(client::Ref{Cmosquitto})
+    msg_nr = ccall((:mosquitto_will_clear, libmosquitto), Cint, (Ptr{Cmosquitto},), client)
+    return mosq_err_t(msg_nr)
 end
 
 # Username and password
@@ -118,8 +148,8 @@ function publish(client::Ref{Cmosquitto}, mid, topic::String, payload; qos::Int 
     payloadnew = getbytes(payload)
     payloadlen = length(payloadnew) # dont use sizeof, as payloadnew might be of type "reinterpreted"
     msg_nr = ccall((:mosquitto_publish, libmosquitto), Cint,
-    (Ptr{Cmosquitto}, Ptr{Cint}, Cstring, Cint, Ptr{UInt8}, Cint, Bool), 
-    client, mid, topic, payloadlen, payloadnew, qos, retain)
+                    (Ptr{Cmosquitto}, Ptr{Cint}, Cstring, Cint, Ptr{UInt8}, Cint, Bool), 
+                    client, mid, topic, payloadlen, payloadnew, qos, retain)
     return mosq_err_t(msg_nr)
 end
 
@@ -136,8 +166,8 @@ end
 function unsubscribe(client::Ref{Cmosquitto}, sub::String)
     mid = zeros(Cint, 1)
     msg_nr = ccall((:mosquitto_unsubscribe, libmosquitto), Cint, 
-    (Ptr{Cmosquitto}, Ptr{Cint}, Cstring),
-    client, mid, sub)
+                    (Ptr{Cmosquitto}, Ptr{Cint}, Cstring),
+                    client, mid, sub)
     return mosq_err_t(msg_nr)
 end
 
@@ -155,15 +185,34 @@ function loop_stop(client::Ref{Cmosquitto}; force::Bool = false)
 end
 =#
 
-
 function loop_forever(client::Ref{Cmosquitto}; timeout::Int = 1000, max_packets::Int = 1)
     msg_nr = @threadcall((:mosquitto_loop_forever, libmosquitto), Cint, (Ptr{Cmosquitto}, Cint, Cint), client, timeout, max_packets)
     return mosq_err_t(msg_nr)
 end
 
 
-function loop(client; timeout::Int = 1000, max_packets::Int = 1)
+function loop(client::Ref{Cmosquitto}; timeout::Int = 1000, max_packets::Int = 1)
     msg_nr = ccall((:mosquitto_loop, libmosquitto), Cint, (Ptr{Cmosquitto}, Cint, Cint), client, timeout, max_packets)
+    return mosq_err_t(msg_nr)
+end
+
+# Network loop (helper functions)
+
+function want_write(client::Ref{Cmosquitto})
+    # Cuchar is equivalent to bool in C, see https://docs.julialang.org/en/v1/manual/calling-c-and-fortran-code/
+    return ccall((:mosquitto_want_write, libmosquitto), Cuchar, (Ptr{Cmosquitto},), client)
+end
+
+# Client options
+
+function int_option(client::Ref{Cmosquitto}, option::mosq_opt_t, value::Cint)
+    msg_nr = ccall((:mosquitto_int_option, libmosquitto), Cint, (Ptr{Cmosquitto}, Cint, Cint), client, Integer(option), value)
+    return mosq_err_t(msg_nr)
+end
+
+
+function string_option(client::Ref{Cmosquitto}, option::mosq_opt_t, value::String)
+    msg_nr = ccall((:mosquitto_string_option, libmosquitto), Cint, (Ptr{Cmosquitto}, Cint, Cstring), client, Integer(option), value)
     return mosq_err_t(msg_nr)
 end
 
