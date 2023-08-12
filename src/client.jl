@@ -8,17 +8,19 @@ Container storing required pointers of the client.
 """
 mutable struct Cptrs
     mosc::Ptr{Cmosquitto}
+    callbackobjs::Base.RefValue{CallbackObjs}
 
-    function Cptrs(mosc::Ptr{Cmosquitto})
-        cobjs = new(mosc)
-        finalizer( x->(MosquittoCwrapper.disconnect(x.mosc); MosquittoCwrapper.destroy(x.mosc)) , cobjs)
+    function Cptrs(mosc::Ptr{Cmosquitto}, cbobjs)
+        cobjs = new(mosc, cbobjs)
+        finalizer( x->MosquittoCwrapper.destroy(x.mosc) , cobjs)
         return cobjs
     end
 end
 
+abstract type AbstractClient end
 
 # Client, constructor below
-struct Client
+struct Client<:AbstractClient
     id::String
     conn_status::Base.RefValue{Bool}
     cbobjs::CallbackObjs
@@ -26,7 +28,7 @@ struct Client
 end
 
 
-function show(io::IO, client::Client)
+function show(io::IO, client::AbstractClient)
     println("MQTTClient_$(client.id)")
 end
 
@@ -59,11 +61,11 @@ function Client(ip::String, port::Int=1883; kw...)
 end
 
 function Client(; id::String = randstring(15), 
-                    messages_channel::Channel{MessageCB} = Channel{MessageCB}(20),
-                    autocleanse_message_channel::Bool = false,
-                    connect_channel::Channel{ConnectionCB} = Channel{ConnectionCB}(5),
-                    autocleanse_connect_channel::Bool = false,
-                    pub_channel::Channel{Cint} = Channel{Cint}(5))
+        messages_channel::Channel{MessageCB} = Channel{MessageCB}(20),
+        autocleanse_message_channel::Bool = false,
+        connect_channel::Channel{ConnectionCB} = Channel{ConnectionCB}(5),
+        autocleanse_connect_channel::Bool = false,
+        pub_channel::Channel{Cint} = Channel{Cint}(5))
 
     # Create mosquitto object and save
     cbobjs = CallbackObjs(messages_channel, connect_channel, pub_channel, (autocleanse_message_channel, autocleanse_connect_channel))
@@ -71,7 +73,7 @@ function Client(; id::String = randstring(15),
     cmosc = MosquittoCwrapper.mosquitto_new(id, true, cbobjs_ref)
 
     # Set callbacks
-    cfunc_message = @cfunction(callback_message, Cvoid, (Ptr{Cmosquitto}, Ptr{CallbackObjs}, Ptr{CMosquittoMessage}))
+    cfunc_message = @cfunction(callback_message, Cvoid, (Ptr{Cmosquitto}, Ptr{CallbackObjs}, Ptr{CmosquittoMessage}))
     cfunc_publish = @cfunction(callback_publish, Cvoid, (Ptr{Cmosquitto}, Ptr{CallbackObjs}, Cint))
     cfunc_connect = @cfunction(callback_connect, Cvoid, (Ptr{Cmosquitto}, Ptr{CallbackObjs}, Cint))
     cfunc_disconnect = @cfunction(callback_disconnect, Cvoid, (Ptr{Cmosquitto}, Ptr{CallbackObjs}, Cint))
@@ -82,8 +84,8 @@ function Client(; id::String = randstring(15),
     MosquittoCwrapper.disconnect_callback_set(cmosc, cfunc_disconnect)
 
     # Create object
-    return Client(id, Ref(false), cbobjs, Cptrs(cmosc) )
+    return Client(id, Ref(false), cbobjs, Cptrs(cmosc, cbobjs_ref) )
 end
 
-get_messages_channel(client::Client) = client.cbobjs.messages_channel
-get_connect_channel(client::Client) = client.cbobjs.connect_channel
+get_messages_channel(client::AbstractClient) = client.cbobjs.messages_channel
+get_connect_channel(client::AbstractClient) = client.cbobjs.connect_channel

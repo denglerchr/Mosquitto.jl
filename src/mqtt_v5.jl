@@ -1,138 +1,28 @@
-"""
-    mutable struct PropertyList
-
-Container for mqtt properties. Create using `create_property_list` and add items using `add_property!`.
-Extract single properties using `read_property_list`.
-"""
-mutable struct PropertyList
-    mosq_prop::Ref{Ptr{Cmosquitto_property}}
-
-    function PropertyList()
-        proplist = new( Ptr{Cmosquitto_property}(UInt(C_NULL)) )
-        finalizer( x->MosquittoCwrapper.property_free_all(x.mosq_prop), proplist)
-        return proplist
-    end
+function disconnect(client::Client_v5; properties::PropertyList = PropertyList())
+    flag = MosquittoCwrapper.disconnect_v5(client.cptr.mosc, properties.mosq_prop.x)
+    flag == MosquittoCwrapper.MOSQ_ERR_SUCCESS && (client.conn_status.x = false)
+    return flag
 end
 
-struct Property
-    name::String
-    val::Vector{UInt8}
-    prop::MosquittoCwrapper.mqtt5_property
-    type::MosquittoCwrapper.mqtt5_property_type
+function will_set(client::Client_v5, topic::String, payload; qos::Int = 1, retain::Bool = false, properties::PropertyList = PropertyList()) 
+    return MosquittoCwrapper.will_set_v5(client.cptr.mosc, topic, payload; qos=qos, retain = retain, properties = properties.mosq_prop.x)
+end
 
-    function Property(prop_ptr::Ptr{Cmosquitto_property})
-        # get first identifier if any
-        prop_id, success = MosquittoCwrapper.property_identifier(prop_ptr)
-        !success && error("Could not create Property from pointer $prop_ptr")
-    
-        # get name and type as well
-        name = MosquittoCwrapper.property_identifier_to_string(prop_id)
-        msg, _, type = MosquittoCwrapper.string_to_property_info(name)
-        msg != MosquittoCwrapper.MOSQ_ERR_SUCCESS && error("Couldnt find property info for $name")
-    
-        # get value as byte array
-        if type == MosquittoCwrapper.MQTT_PROP_TYPE_STRING_PAIR
-            pair, success = MosquittoCwrapper.property_read_string_pair(prop_ptr, prop_id)
-            !success && error("Unseccussfull reading of property pair for $prop_id in `property_read_string_pair`")
-            name = pair[1]
-            val = collect(MosquittoCwrapper.getbytes(pair[2]))
-        else
-            val = MosquittoCwrapper.property_read_nonpair(prop_ptr, prop_id, type)
+
+function publish(client::Client_v5, topic::String, payload; qos::Int = 1, retain::Bool = false, waitcb::Bool = false, properties::PropertyList = PropertyList()) 
+    mid = Ref(zero(Cint)) # message id
+    rv = MosquittoCwrapper.publish_v5(client.cptr.mosc, mid, topic, payload; qos = qos, retain = retain, properties = properties.mosq_prop.x)
+
+    # possibly wait for message to be sent successfully to broker
+    if waitcb && (rv == MosquittoCwrapper.MOSQ_ERR_SUCCESS)
+        mid2 = mid.x - Cint(1)
+        while mid.x != mid2
+            mid2 = take!(client.cbobjs.pub_channel)[1]
         end
-    
-        return new( name, val, prop_id, type)
     end
+    return rv
 end
 
-@inline function isvalidproperty(prop_ptr::Ptr{Cmosquitto_property})
-    _, success = MosquittoCwrapper.property_identifier(prop_ptr)
-    return success
-end
+subscribe(client::Client_v5, topic::String; qos::Int = 1, properties::PropertyList = PropertyList()) = MosquittoCwrapper.subscribe_v5(client.cptr.mosc, topic; qos = qos, properties = properties.mosq_prop.x)
 
-function iterate(proplist::PropertyList)
-    !isvalidproperty(proplist.mosq_prop.x) && return nothing
-    return Property(proplist.mosq_prop.x), proplist.mosq_prop.x
-end
-
-function iterate(proplist::PropertyList, propptr)
-    nextprop = MosquittoCwrapper.property_next(propptr)
-    !isvalidproperty(nextprop) && return nothing
-    return Property(nextprop), nextprop
-end
-
-
-"""
-create_property_list(name::String, value::T) where {T}
-
-Create a list containing mqtt properties. Initiates with a single entry, more can be added with
-`add_property!`. 
-See help of `mqtt5_property` and `property_identifier_to_string` for valid inputs.
-"""
-function create_property_list(name::String, value::T) where {T}
-    proplist = PropertyList()
-    add_property!(proplist, name, value)
-    return proplist
-end
-
-
-"""
-add_property!(proplist::PropertyList, name::String, value::T) where {T}
-
-Add a property to an existing property list
-"""
-function add_property!(proplist::PropertyList, name::String, value::T) where {T}
-
-    # check name against valid Mosquitto properties
-    msg_nr, prop, type = MosquittoCwrapper.string_to_property_info(name)
-
-    # case of no mqtt5_property found => try MQTT_PROP_USER_PROPERTY
-    if msg_nr != MosquittoCwrapper.MOSQ_ERR_SUCCESS
-        !(T==String) && error("MQTT property $name can only be added as type user property. A user property requires String as value type, got $T")
-        prop = MosquittoCwrapper.MQTT_PROP_USER_PROPERTY
-        MosquittoCwrapper.property_add_string_pair(proplist.mosq_prop, prop, (name=>value))
-        return proplist
-    end
-
-    # check value against correct property type
-    Trequired = MosquittoCwrapper.get_julia_type(type)
-    @assert T == Trequired "Expected type $Trequired for property $prop."
-
-
-    if type == MosquittoCwrapper.MQTT_PROP_TYPE_BYTE
-        MosquittoCwrapper.property_add_byte(proplist.mosq_prop, prop, value)
-
-    elseif type == MosquittoCwrapper.MQTT_PROP_TYPE_INT16
-        MosquittoCwrapper.property_add_int16(proplist.mosq_prop, prop, value)
-
-    elseif type == MosquittoCwrapper.MQTT_PROP_TYPE_INT32
-        MosquittoCwrapper.property_add_int32(proplist.mosq_prop, prop, value)
-
-    elseif type == MosquittoCwrapper.MQTT_PROP_TYPE_VARINT
-        MosquittoCwrapper.property_add_varint(proplist.mosq_prop, prop, value)
-
-    elseif type == MosquittoCwrapper.MQTT_PROP_TYPE_BINARY
-        MosquittoCwrapper.property_add_binary(proplist.mosq_prop, prop, value)
-
-    elseif type == MosquittoCwrapper.MQTT_PROP_TYPE_STRING
-        MosquittoCwrapper.property_add_string(proplist.mosq_prop, prop, value)
-
-    else # MosquittoCwrapper.MQTT_PROP_TYPE_STRING_PAIR
-        MosquittoCwrapper.property_add_string_pair(proplist.mosq_prop, prop, value)
-    end
-
-    return proplist
-end
-
-
-"""
-read_property_list(props::PropertyList)
-
-Extract a vector of `Property` out of the propertylist.
-"""
-function read_property_list(props::PropertyList)
-    Out = Vector{Property}(undef, 0)
-    for prop in props
-        push!(Out, prop)
-    end
-    return Out
-end
+unsubscribe(client::Client_v5, topic::String; properties::PropertyList = PropertyList()) = MosquittoCwrapper.unsubscribe_v5(client.cptr.mosc, topic; properties = properties.mosq_prop.x)

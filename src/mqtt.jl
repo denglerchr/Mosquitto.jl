@@ -1,12 +1,12 @@
 """
-    connect(client::Client, ip::String, port::Int; kwargs...)
+    connect(client::AbstractClient, ip::String, port::Int; kwargs...)
 
 Connect the client to a broker. kwargs are:
 * username::String = ""      A username, should one be required
 * password::String = ""      A password belonging to the username
 * keepalive::Int = 60   Maximal of time the client has to send PINGREQ or a message before disconnection
 """
-function connect(client::Client, ip::String, port::Int; username::String = "", password::String = "", keepalive::Int = 60)
+function connect(client::AbstractClient, ip::String, port::Int; username::String = "", password::String = "", keepalive::Int = 60)
     if username != ""
         flag = MosquittoCwrapper.username_pw_set(client.cptr.mosc, username, password)
         flag != MosquittoCwrapper.MOSQ_ERR_SUCCESS && @warn("Couldnt set password and username, error $flag")
@@ -32,7 +32,7 @@ end
 """
     reconnect(client::Client)
 """
-function reconnect(client::Client)
+function reconnect(client::AbstractClient)
     flag = MosquittoCwrapper.reconnect(client.cptr.mosc)
     flag == MosquittoCwrapper.MOSQ_ERR_SUCCESS && (client.conn_status.x = true)
     return flag
@@ -54,7 +54,7 @@ will_set(client::Client, topic::String, payload; qos::Int = 1, retain::Bool = fa
 
 Remove a previously set will
 """
-will_clear(client::Client) = MosquittoCwrapper.will_clear(client.cptr.mosc)
+will_clear(client::AbstractClient) = MosquittoCwrapper.will_clear(client.cptr.mosc)
 
 
 """
@@ -101,12 +101,12 @@ unsubscribe(client::Client, topic::String) = MosquittoCwrapper.unsubscribe(clien
 
 Perform a network loop. This will get messages of subscriptions and send published messages.
 """
-function loop(client::Client; timeout::Int = 1000, ntimes::Int = 1, autoreconnect::Bool = true) 
+function loop(client::AbstractClient; timeout::Int = 1000, ntimes::Int = 1, autoreconnect::Bool = true) 
     out = MosquittoCwrapper.MOSQ_ERR_INVAL
     for _ = 1:ntimes
         out = MosquittoCwrapper.loop(client.cptr.mosc; timeout = timeout)
         if autoreconnect && out == MosquittoCwrapper.MOSQ_ERR_CONN_LOST
-            flag = MosquittoCwrapper.reconnect(client)
+            flag = reconnect(client)
             client.conn_status.x = ifelse( flag == MosquittoCwrapper.MOSQ_ERR_SUCCESS, true, false )  
         end
     end
@@ -115,7 +115,7 @@ end
 
 
 """
-    loop_forever(client::Ref{Cmosquitto}; timeout::Int = 1000)
+    loop_forever(client::AbstractClient; timeout::Int = 1000)
 
 Continuously perform network loop. Reconnecting is handled, and the function returns after 
 disconnect(client) is called. Calls the mosquitto C library using @threadcall to allow
@@ -123,16 +123,16 @@ asynchronous execution.
 This function segfaults on older Julia versions, a Mosquitto.loop_forever2(client) functions can
 be used for a worse performance, but more stable version of it.
 """
-loop_forever(client::Client; timeout::Int = 1000) = MosquittoCwrapper.loop_forever(client.cptr.mosc; timeout = timeout, max_packets = 1)
+loop_forever(client::AbstractClient; timeout::Int = 1000) = MosquittoCwrapper.loop_forever(client.cptr.mosc; timeout = timeout, max_packets = 1)
 
 
 """
-loop_forever2(client::Ref{Cmosquitto}; timeout::Int = 10)
+loop_forever2(client::AbstractClient; timeout::Int = 10)
 
 Continuously perform network loop. Reconnecting is handled, and the function returns after 
 disconnect(client) is called. This is a slower version of loop_forever, however it works on older Julia versions.
 """
-function loop_forever2(client::Client; timeout::Int = 10)
+function loop_forever2(client::AbstractClient; timeout::Int = 10)
     rc = MosquittoCwrapper.MOSQ_ERR_SUCCESS
     while rc != MOSQ_ERR_NO_CONN
         rc = MosquittoCwrapper.loop(client; timeout = timeout)
@@ -143,9 +143,9 @@ end
 
 
 """
-    tls_set(client::Client, cafile::String; certfile::String = "", keyfile::String = "")
+    tls_set(client::AbstractClient, cafile::String; certfile::String = "", keyfile::String = "")
 """
-function tls_set(client::Client, cafile::String; certfile::String = "", keyfile::String = "")
+function tls_set(client::AbstractClient, cafile::String; certfile::String = "", keyfile::String = "")
     xor( certfile == "", keyfile == "" ) && throw("You need to either provide both cert and key files, or none of both")
     if certfile == ""
         return MosquittoCwrapper.tls_set(client.cptr.mosc, cafile, C_NULL, C_NULL, C_NULL, C_NULL)
@@ -156,8 +156,8 @@ end
 
 
 """
-    tls_plk_set(client::Client, psk::String, identity::String, ciphers::Union{Nothing, String})
+    tls_plk_set(client::AbstractClient, psk::String, identity::String, ciphers::Union{Nothing, String})
 """
-function tls_psk_set(client::Client, psk::String, identity::String, ciphers::Union{Nothing, String} = nothing)
+function tls_psk_set(client::AbstractClient, psk::String, identity::String, ciphers::Union{Nothing, String} = nothing)
     return MosquittoCwrapper.tls_psk_set(client.cptr.mosc, psk, identity, ciphers)    
 end

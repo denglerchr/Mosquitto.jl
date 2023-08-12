@@ -7,7 +7,7 @@ import Base: finalizer, iterate
 using Random
 
 include("MosquittoCwrapper/MosquittoCwrapper.jl")
-import .MosquittoCwrapper: Cmosquitto, CMosquittoMessage, Cmosquitto_property, lib_version
+import .MosquittoCwrapper: Cmosquitto, CmosquittoMessage, CmosquittoProperty, lib_version
 export MosquittoCwrapper
 
 function __init__()
@@ -28,9 +28,13 @@ export loop, loop_forever, loop_forever2
 export tls_set, tls_psk_set
 export will_set, will_clear
 
-include("mqtt_v5.jl")
+include("properties_v5.jl")
 export PropertyList, create_property_list, add_property!, read_property_list
 
 include("callbacks_v5.jl")
+include("client_v5.jl")
+include("mqtt_v5.jl")
+export Client_v5
+
 
 end # module

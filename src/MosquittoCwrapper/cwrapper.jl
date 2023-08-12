@@ -1,6 +1,6 @@
 struct Cmosquitto end
 
-struct CMosquittoMessage
+struct CmosquittoMessage
     mid::Cint
 	topic::Cstring
 	payload::Ptr{UInt8} # we treat payload as raw bytes
@@ -65,9 +65,9 @@ end
 	MOSQ_OPT_TLS_USE_OS_CERTS = 13
 end
 
-const MQTT_PROTOCOL_V31 = 3
-const MQTT_PROTOCOL_V311 = 4
-const MQTT_PROTOCOL_V5 = 5
+const MQTT_PROTOCOL_V31 = Cint(3)
+const MQTT_PROTOCOL_V311 = Cint(4)
+const MQTT_PROTOCOL_V5 = Cint(5)
 
 # Library version, init, and cleanup
 

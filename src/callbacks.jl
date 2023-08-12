@@ -43,9 +43,9 @@ end
 
 # This callback function puts any message on arrival in the channel
 # messages_channel which is a Channel{Mosquitto.Message}(20)
-# The CMosquittoMessage does not have to be free-ed, it is free-ed by Mosquitto
+# The CmosquittoMessage does not have to be free-ed, it is free-ed by Mosquitto
 # according to https://github.com/eclipse/mosquitto/issues/549
-function callback_message(mos::Ptr{Cmosquitto}, obj::Ptr{CallbackObjs}, message::Ptr{CMosquittoMessage}) #, clientid::String)
+function callback_message(mos::Ptr{Cmosquitto}, obj::Ptr{CallbackObjs}, message::Ptr{CmosquittoMessage})
     # get topic and payload from the message
     jlmessage = unsafe_load(message)
     jlpayload = [unsafe_load(jlmessage.payload, i) for i = 1:jlmessage.payloadlen]

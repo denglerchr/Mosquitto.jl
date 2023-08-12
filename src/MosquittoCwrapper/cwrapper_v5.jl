@@ -1,4 +1,4 @@
-struct Cmosquitto_property end
+struct CmosquittoProperty end
 
 # structs from mqtt_protocol.h
 
@@ -85,26 +85,48 @@ end
 # Will
 
 function will_set_v5(client::Ref{Cmosquitto}, topic::String, payload;
-    qos::Int=1, retain::Bool = false, properties::Ref{Cmosquitto_property} = C_NULL)
+    qos::Int=1, retain::Bool = false, properties::Ref{CmosquittoProperty} = C_NULL)
     payloadnew = getbytes(payload)
     payloadlen = length(payloadnew) # dont use sizeof, as payloadnew might be of type "reinterpreted"
     msg_nr = ccall((:mosquitto_will_set_v5, libmosquitto), Cint,
-                    (Ptr{Cmosquitto}, Cstring, Cint, Ptr{UInt8}, Cint, Bool, Ptr{Cmosquitto_property}), 
+                    (Ptr{Cmosquitto}, Cstring, Cint, Ptr{UInt8}, Cint, Bool, Ptr{CmosquittoProperty}), 
                     client, topic, payloadlen, payloadnew, qos, retain, properties)
     return mosq_err_t(msg_nr)
 end
 
 # Connecting, reconnecting, disconnecting
 
+function disconnect_v5(client::Ref{Cmosquitto}, properties::Ref{CmosquittoProperty})
+    msg_nr = ccall((:mosquitto_disconnect, libmosquitto), Cint, (Ptr{Cmosquitto}, Ptr{CmosquittoProperty}), client, properties)
+    return mosq_err_t(msg_nr)
+end
+
 # Publishing, subscribing, unsubscribing
 
 function publish_v5(client::Ref{Cmosquitto}, mid, topic::String, payload; 
-                qos::Int = 1, retain::Bool = true, properties::Ref{Cmosquitto_property} = C_NULL)
+                qos::Int = 1, retain::Bool = true, properties::Ref{CmosquittoProperty} = C_NULL)
     payloadnew = getbytes(payload)
     payloadlen = length(payloadnew) # dont use sizeof, as payloadnew might be of type "reinterpreted"
     msg_nr = ccall((:mosquitto_publish, libmosquitto), Cint,
-                    (Ptr{Cmosquitto}, Ptr{Cint}, Cstring, Cint, Ptr{UInt8}, Cint, Bool, Ptr{Cmosquitto_property}), 
+                    (Ptr{Cmosquitto}, Ptr{Cint}, Cstring, Cint, Ptr{UInt8}, Cint, Bool, Ptr{CmosquittoProperty}), 
                     client, mid, topic, payloadlen, payloadnew, qos, retain, properties)
+    return mosq_err_t(msg_nr)
+end
+
+function subscribe_v5(client::Ref{Cmosquitto}, sub::String; qos::Int = 1, properties::Ref{CmosquittoProperty} = C_NULL)
+    mid = zeros(Cint, 1)
+    msg_nr = ccall((:mosquitto_subscribe_v5, libmosquitto), Cint, 
+    (Ptr{Cmosquitto}, Ptr{Cint}, Cstring, Cint, Ptr{CmosquittoProperty}),
+    client, mid, sub, qos, properties)
+    return mosq_err_t(msg_nr)
+end
+
+
+function unsubscribe_v5(client::Ref{Cmosquitto}, sub::String; properties::Ref{CmosquittoProperty} = C_NULL)
+    mid = zeros(Cint, 1)
+    msg_nr = ccall((:mosquitto_unsubscribe_v5, libmosquitto), Cint, 
+                    (Ptr{Cmosquitto}, Ptr{Cint}, Cstring, Ptr{CmosquittoProperty}),
+                    client, mid, sub, properties)
     return mosq_err_t(msg_nr)
 end
 
@@ -134,70 +156,70 @@ end
 
 # Properties
 
-function property_add_byte(proplist::Ref{Ptr{Cmosquitto_property}}, identifier::mqtt5_property, value::UInt8)
+function property_add_byte(proplist::Ref{Ptr{CmosquittoProperty}}, identifier::mqtt5_property, value::UInt8)
     msg_nr = ccall((:mosquitto_property_add_byte, libmosquitto), Cint,
-                    (Ptr{Ptr{Cmosquitto_property}}, Cint, UInt8),
+                    (Ptr{Ptr{CmosquittoProperty}}, Cint, UInt8),
                     proplist, Integer(identifier), value)
     return mosq_err_t(msg_nr)
 end
 
 
-function property_add_int16(proplist::Ref{Ptr{Cmosquitto_property}}, identifier::mqtt5_property, value::UInt16)
+function property_add_int16(proplist::Ref{Ptr{CmosquittoProperty}}, identifier::mqtt5_property, value::UInt16)
     msg_nr = ccall((:mosquitto_property_add_int16, libmosquitto), Cint,
-                    (Ptr{Ptr{Cmosquitto_property}}, Cint, UInt16),
+                    (Ptr{Ptr{CmosquittoProperty}}, Cint, UInt16),
                     proplist, Integer(identifier), value)
     return mosq_err_t(msg_nr)
 end
 
 
-function property_add_int32(proplist::Ref{Ptr{Cmosquitto_property}}, identifier::mqtt5_property, value::UInt32)
+function property_add_int32(proplist::Ref{Ptr{CmosquittoProperty}}, identifier::mqtt5_property, value::UInt32)
     msg_nr = ccall((:mosquitto_property_add_int32, libmosquitto), Cint,
-                    (Ptr{Ptr{Cmosquitto_property}}, Cint, UInt32),
+                    (Ptr{Ptr{CmosquittoProperty}}, Cint, UInt32),
                     proplist, Integer(identifier), value)
     return mosq_err_t(msg_nr)
 end
 
 
-function property_add_varint(proplist::Ref{Ptr{Cmosquitto_property}}, identifier::mqtt5_property, value::UInt32)
+function property_add_varint(proplist::Ref{Ptr{CmosquittoProperty}}, identifier::mqtt5_property, value::UInt32)
     msg_nr = ccall((:mosquitto_property_add_varint, libmosquitto), Cint,
-                    (Ptr{Ptr{Cmosquitto_property}}, Cint, UInt32),
+                    (Ptr{Ptr{CmosquittoProperty}}, Cint, UInt32),
                     proplist, Integer(identifier), value)
     return mosq_err_t(msg_nr)
 end
 
 
-function property_add_binary(proplist::Ref{Ptr{Cmosquitto_property}}, identifier::mqtt5_property, value::Vector{UInt8})
+function property_add_binary(proplist::Ref{Ptr{CmosquittoProperty}}, identifier::mqtt5_property, value::Vector{UInt8})
 	
 	len = length(value)
 	@assert len < typemax(UInt16)
 
     msg_nr = ccall((:mosquitto_property_add_binary, libmosquitto), Cint,
-                    (Ptr{Ptr{Cmosquitto_property}}, Cint, Ptr{Cvoid}, UInt16),
+                    (Ptr{Ptr{CmosquittoProperty}}, Cint, Ptr{Cvoid}, UInt16),
                     proplist, Integer(identifier), value, UInt16(len))
     return mosq_err_t(msg_nr)
 end
 
 
-function property_add_string(proplist::Ref{Ptr{Cmosquitto_property}}, identifier::mqtt5_property, value::String)
+function property_add_string(proplist::Ref{Ptr{CmosquittoProperty}}, identifier::mqtt5_property, value::String)
     msg_nr = ccall((:mosquitto_property_add_string, libmosquitto), Cint,
-                    (Ptr{Ptr{Cmosquitto_property}}, Cint, Cstring),
+                    (Ptr{Ptr{CmosquittoProperty}}, Cint, Cstring),
                     proplist, Integer(identifier), value)
     return mosq_err_t(msg_nr)
 end
 
 
-function property_add_string_pair(proplist::Ref{Ptr{Cmosquitto_property}}, identifier::mqtt5_property, pair::Pair{String, String})
+function property_add_string_pair(proplist::Ref{Ptr{CmosquittoProperty}}, identifier::mqtt5_property, pair::Pair{String, String})
 	name = pair[1]
 	value = pair[2]
     msg_nr = ccall((:mosquitto_property_add_string_pair, libmosquitto), Cint,
-                    (Ptr{Ptr{Cmosquitto_property}}, Cint, Cstring, Cstring),
+                    (Ptr{Ptr{CmosquittoProperty}}, Cint, Cstring, Cstring),
                     proplist, Integer(identifier), name, value)
     return mosq_err_t(msg_nr)
 end
 
 
-function property_identifier(prop::Ptr{Cmosquitto_property})
-    msg = ccall((:mosquitto_property_identifier, libmosquitto), Cint, (Ptr{Cmosquitto_property},), prop)
+function property_identifier(prop::Ptr{CmosquittoProperty})
+    msg = ccall((:mosquitto_property_identifier, libmosquitto), Cint, (Ptr{CmosquittoProperty},), prop)
     if msg == zero(Cint)
         prop_out = mqtt5_property(one(Cint))
         success = false
@@ -209,48 +231,48 @@ function property_identifier(prop::Ptr{Cmosquitto_property})
 end
 
 
-function property_next(prop::Ptr{Cmosquitto_property})
-    return ccall((:mosquitto_property_next, libmosquitto), Ptr{Cmosquitto_property}, (Ptr{Cmosquitto_property},), prop)
+function property_next(prop::Ptr{CmosquittoProperty})
+    return ccall((:mosquitto_property_next, libmosquitto), Ptr{CmosquittoProperty}, (Ptr{CmosquittoProperty},), prop)
 end
 
 
-function property_read_byte(prop::Ptr{Cmosquitto_property}, identifier::mqtt5_property; onfail::UInt8 = zero(UInt8))
+function property_read_byte(prop::Ptr{CmosquittoProperty}, identifier::mqtt5_property; onfail::UInt8 = zero(UInt8))
     valref = Ref(onfail)
-    ptr = ccall((:mosquitto_property_read_byte, libmosquitto), Ptr{Cmosquitto_property}, (Ptr{Cmosquitto_property}, Cint, Ptr{UInt8}, Bool), prop, Integer(identifier), valref, false)
+    ptr = ccall((:mosquitto_property_read_byte, libmosquitto), Ptr{CmosquittoProperty}, (Ptr{CmosquittoProperty}, Cint, Ptr{UInt8}, Bool), prop, Integer(identifier), valref, false)
     success = (ptr != C_NULL)
     return valref.x, success
 end
 
 
-function property_read_int16(prop::Ptr{Cmosquitto_property}, identifier::mqtt5_property; onfail::UInt16 = zero(UInt16))
+function property_read_int16(prop::Ptr{CmosquittoProperty}, identifier::mqtt5_property; onfail::UInt16 = zero(UInt16))
     valref = Ref(onfail)
-    ptr = ccall((:mosquitto_property_read_int16, libmosquitto), Ptr{Cmosquitto_property}, (Ptr{Cmosquitto_property}, Cint, Ptr{UInt16}, Bool), prop, Integer(identifier), valref, false)
+    ptr = ccall((:mosquitto_property_read_int16, libmosquitto), Ptr{CmosquittoProperty}, (Ptr{CmosquittoProperty}, Cint, Ptr{UInt16}, Bool), prop, Integer(identifier), valref, false)
     success = (ptr != C_NULL)
     return valref.x, success
 end
 
 
-function property_read_int32(prop::Ptr{Cmosquitto_property}, identifier::mqtt5_property; onfail::UInt32 = zero(UInt32))
+function property_read_int32(prop::Ptr{CmosquittoProperty}, identifier::mqtt5_property; onfail::UInt32 = zero(UInt32))
     valref = Ref(onfail)
-    ptr = ccall((:mosquitto_property_read_int32, libmosquitto), Ptr{Cmosquitto_property}, (Ptr{Cmosquitto_property}, Cint, Ptr{UInt32}, Bool), prop, Integer(identifier), valref, false)
+    ptr = ccall((:mosquitto_property_read_int32, libmosquitto), Ptr{CmosquittoProperty}, (Ptr{CmosquittoProperty}, Cint, Ptr{UInt32}, Bool), prop, Integer(identifier), valref, false)
     success = (ptr != C_NULL)
     return valref.x, success
 end
 
 
-function property_read_varint(prop::Ptr{Cmosquitto_property}, identifier::mqtt5_property; onfail::UInt32 = zero(UInt32))
+function property_read_varint(prop::Ptr{CmosquittoProperty}, identifier::mqtt5_property; onfail::UInt32 = zero(UInt32))
     valref = Ref(onfail)
-    ptr = ccall((:mosquitto_property_read_varint, libmosquitto), Ptr{Cmosquitto_property}, (Ptr{Cmosquitto_property}, Cint, Ptr{UInt32}, Bool), prop, Integer(identifier), valref, false)
+    ptr = ccall((:mosquitto_property_read_varint, libmosquitto), Ptr{CmosquittoProperty}, (Ptr{CmosquittoProperty}, Cint, Ptr{UInt32}, Bool), prop, Integer(identifier), valref, false)
     success = (ptr != C_NULL)
     return valref.x, success
 end
 
 
-function property_read_binary(prop::Ptr{Cmosquitto_property}, identifier::mqtt5_property)
+function property_read_binary(prop::Ptr{CmosquittoProperty}, identifier::mqtt5_property)
     valref = Ref{Ptr{UInt8}}(C_NULL)
     lenref = Ref{UInt16}(C_NULL)
     ptr = ccall((:mosquitto_property_read_binary, libmosquitto), 
-            Ptr{Cmosquitto_property}, (Ptr{Cmosquitto_property}, Cint, Ptr{Ptr{UInt8}}, Ref{UInt16}, Bool),
+            Ptr{CmosquittoProperty}, (Ptr{CmosquittoProperty}, Cint, Ptr{Ptr{UInt8}}, Ref{UInt16}, Bool),
             prop, Integer(identifier), valref, lenref, false)
     if ptr == C_NULL
         bytevec = UInt8[]
@@ -258,34 +280,34 @@ function property_read_binary(prop::Ptr{Cmosquitto_property}, identifier::mqtt5_
     else
         # TODO do we have to free memory here?
         bytevec = [unsafe_load(valref.x, i) for i = 1:lenref.x]
-        Libc.free(valref.x)
+        # Libc.free(valref.x)
         success = true
     end
     return bytevec, success
 end
 
 
-function property_read_string(prop::Ptr{Cmosquitto_property}, identifier::mqtt5_property)
+function property_read_string(prop::Ptr{CmosquittoProperty}, identifier::mqtt5_property)
     valref = Ref{Cstring}(C_NULL)
-    ptr = ccall((:mosquitto_property_read_string, libmosquitto), Ptr{Cmosquitto_property}, (Ptr{Cmosquitto_property}, Cint, Ptr{Cstring}, Bool), prop, Integer(identifier), valref, false)
+    ptr = ccall((:mosquitto_property_read_string, libmosquitto), Ptr{CmosquittoProperty}, (Ptr{CmosquittoProperty}, Cint, Ptr{Cstring}, Bool), prop, Integer(identifier), valref, false)
     if ptr == C_NULL
         strout = ""
         success = false
     else
         # TODO do we have to free memory here?
         strout = unsafe_string(valref.x)
-        Libc.free(valref.x)
+        # Libc.free(valref.x)
         success = true
     end
     return strout, success
 end
 
 
-function property_read_string_pair(prop::Ptr{Cmosquitto_property}, identifier::mqtt5_property)
+function property_read_string_pair(prop::Ptr{CmosquittoProperty}, identifier::mqtt5_property)
     nameref = Ref{Cstring}(C_NULL)
     valref = Ref{Cstring}(C_NULL)
-    ptr = ccall((:mosquitto_property_read_string_pair, libmosquitto), Ptr{Cmosquitto_property},
-            (Ptr{Cmosquitto_property}, Cint, Ptr{Cstring}, Ptr{Cstring}, Bool),
+    ptr = ccall((:mosquitto_property_read_string_pair, libmosquitto), Ptr{CmosquittoProperty},
+            (Ptr{CmosquittoProperty}, Cint, Ptr{Cstring}, Ptr{Cstring}, Bool),
             prop, Integer(identifier), nameref, valref, false)
     if ptr == C_NULL
         pair_out = ("" => "")
@@ -294,8 +316,8 @@ function property_read_string_pair(prop::Ptr{Cmosquitto_property}, identifier::m
         # TODO do we have to free memory here?
         name_out = unsafe_string(nameref.x)
         val_out = unsafe_string(valref.x)
-        Libc.free(nameref.x)
-        Libc.free(valref.x)
+        # Libc.free(nameref.x)
+        # Libc.free(valref.x)
         pair_out = (name_out => val_out)
         success = true
     end
@@ -306,7 +328,7 @@ end
 """
 Not a Mosquitto C function, but convenience to always return a Vector{UInt8}.
 """
-function property_read_nonpair(prop::Ptr{Cmosquitto_property}, identifier::mqtt5_property, type::mqtt5_property_type)::Vector{UInt8}
+function property_read_nonpair(prop::Ptr{CmosquittoProperty}, identifier::mqtt5_property, type::mqtt5_property_type)::Vector{UInt8}
     if type == MQTT_PROP_TYPE_BYTE
         val, success = property_read_byte(prop, identifier)
         Out = UInt8[val]
@@ -336,8 +358,8 @@ end
 
 
 
-function property_free_all(proplist::Ref{Ptr{Cmosquitto_property}})
-    return ccall((:mosquitto_property_free_all, libmosquitto), Cvoid, (Ptr{Ptr{Cmosquitto_property}},), proplist)
+function property_free_all(proplist::Ref{Ptr{CmosquittoProperty}})
+    return ccall((:mosquitto_property_free_all, libmosquitto), Cvoid, (Ptr{Ptr{CmosquittoProperty}},), proplist)
 end
 
 
@@ -346,7 +368,8 @@ function property_identifier_to_string(identifier::mqtt5_property)
     if cstr == C_NULL
         return "Not found"
     else
-        return unsafe_string(cstr)
+        str_out = unsafe_string(cstr) # not allowed to free this
+        return str_out
     end
 end
 
