@@ -3,11 +3,12 @@
 # https://github.com/eclipse/mosquitto/blob/master/include/mosquitto.h
 module Mosquitto
 
-import Base: finalizer
+import Base: finalizer, iterate
 using Random
 
 include("MosquittoCwrapper/MosquittoCwrapper.jl")
 import .MosquittoCwrapper: Cmosquitto, CMosquittoMessage, Cmosquitto_property, lib_version
+export MosquittoCwrapper
 
 function __init__()
     mosq_error_code = MosquittoCwrapper.lib_init()
@@ -28,6 +29,8 @@ export tls_set, tls_psk_set
 export will_set, will_clear
 
 include("mqtt_v5.jl")
-export PropertyList, create_property_list, add_property!
+export PropertyList, create_property_list, add_property!, read_property_list
+
+include("callbacks_v5.jl")
 
 end # module

@@ -1,7 +1,8 @@
 """
     mutable struct PropertyList
 
-Container for mqtt properties. Create using `create_property_list` and add items using `add_property`.
+Container for mqtt properties. Create using `create_property_list` and add items using `add_property!`.
+Extract single properties using `read_property_list`.
 """
 mutable struct PropertyList
     mosq_prop::Ref{Ptr{Cmosquitto_property}}
@@ -13,12 +14,59 @@ mutable struct PropertyList
     end
 end
 
+struct Property
+    name::String
+    val::Vector{UInt8}
+    prop::MosquittoCwrapper.mqtt5_property
+    type::MosquittoCwrapper.mqtt5_property_type
+
+    function Property(prop_ptr::Ptr{Cmosquitto_property})
+        # get first identifier if any
+        prop_id, success = MosquittoCwrapper.property_identifier(prop_ptr)
+        !success && error("Could not create Property from pointer $prop_ptr")
+    
+        # get name and type as well
+        name = MosquittoCwrapper.property_identifier_to_string(prop_id)
+        msg, _, type = MosquittoCwrapper.string_to_property_info(name)
+        msg != MosquittoCwrapper.MOSQ_ERR_SUCCESS && error("Couldnt find property info for $name")
+    
+        # get value as byte array
+        if type == MosquittoCwrapper.MQTT_PROP_TYPE_STRING_PAIR
+            pair, success = MosquittoCwrapper.property_read_string_pair(prop_ptr, prop_id)
+            !success && error("Unseccussfull reading of property pair for $prop_id in `property_read_string_pair`")
+            name = pair[1]
+            val = collect(MosquittoCwrapper.getbytes(pair[2]))
+        else
+            val = MosquittoCwrapper.property_read_nonpair(prop_ptr, prop_id, type)
+        end
+    
+        return new( name, val, prop_id, type)
+    end
+end
+
+@inline function isvalidproperty(prop_ptr::Ptr{Cmosquitto_property})
+    _, success = MosquittoCwrapper.property_identifier(prop_ptr)
+    return success
+end
+
+function iterate(proplist::PropertyList)
+    !isvalidproperty(proplist.mosq_prop.x) && return nothing
+    return Property(proplist.mosq_prop.x), proplist.mosq_prop.x
+end
+
+function iterate(proplist::PropertyList, propptr)
+    nextprop = MosquittoCwrapper.property_next(propptr)
+    !isvalidproperty(nextprop) && return nothing
+    return Property(nextprop), nextprop
+end
+
 
 """
 create_property_list(name::String, value::T) where {T}
 
 Create a list containing mqtt properties. Initiates with a single entry, more can be added with
-`add_property!`.
+`add_property!`. 
+See help of `mqtt5_property` and `property_identifier_to_string` for valid inputs.
 """
 function create_property_list(name::String, value::T) where {T}
     proplist = PropertyList()
@@ -36,11 +84,18 @@ function add_property!(proplist::PropertyList, name::String, value::T) where {T}
 
     # check name against valid Mosquitto properties
     msg_nr, prop, type = MosquittoCwrapper.string_to_property_info(name)
-    msg_nr != MosquittoCwrapper.MOSQ_ERR_SUCCESS && error("Invalid MQTT property name $name. To get a list of valid names, check the enum ?Mosquitto.MosquittoCwrapper.mqtt5_property" )
+
+    # case of no mqtt5_property found => try MQTT_PROP_USER_PROPERTY
+    if msg_nr != MosquittoCwrapper.MOSQ_ERR_SUCCESS
+        !(T==String) && error("MQTT property $name can only be added as type user property. A user property requires String as value type, got $T")
+        prop = MosquittoCwrapper.MQTT_PROP_USER_PROPERTY
+        MosquittoCwrapper.property_add_string_pair(proplist.mosq_prop, prop, (name=>value))
+        return proplist
+    end
 
     # check value against correct property type
     Trequired = MosquittoCwrapper.get_julia_type(type)
-    @assert T == Trequired "Exped type $Trequired for property $prop."
+    @assert T == Trequired "Expected type $Trequired for property $prop."
 
 
     if type == MosquittoCwrapper.MQTT_PROP_TYPE_BYTE
@@ -63,8 +118,21 @@ function add_property!(proplist::PropertyList, name::String, value::T) where {T}
 
     else # MosquittoCwrapper.MQTT_PROP_TYPE_STRING_PAIR
         MosquittoCwrapper.property_add_string_pair(proplist.mosq_prop, prop, value)
-
     end
 
     return proplist
+end
+
+
+"""
+read_property_list(props::PropertyList)
+
+Extract a vector of `Property` out of the propertylist.
+"""
+function read_property_list(props::PropertyList)
+    Out = Vector{Property}(undef, 0)
+    for prop in props
+        push!(Out, prop)
+    end
+    return Out
 end
