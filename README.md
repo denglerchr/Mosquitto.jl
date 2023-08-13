@@ -1,6 +1,6 @@
 # Mosquitto.jl
 
-A wrapper around the [Mosquitto](https://mosquitto.org/) C Api. Currently both MQTT 3.1.1 and MQTT 5 functionalities are wrapped.
+A wrapper around the [Mosquitto](https://mosquitto.org/) C Api. Currently both MQTT v3.1.1 and MQTT 5 functionalities are wrapped.
 
 ## Installation
 Download the julia package by typing the following in your julia repl
@@ -18,7 +18,7 @@ using Mosquitto
 client = Client("test.mosquitto.org", 1883)
 ```
 
-Create a client using the ip and port of the broker. 
+Create a client (MQTT v3.1.1) using the ip and port of the broker. 
 Use ?Mosquitto.Client for information on client settings.
 
 ### Publish a message
@@ -93,6 +93,10 @@ a *loop_forever(client)* function that is wrapped as well. This background task 
 
 ### Authentication
 You find examples in the example folder for how to use TLS connections and user/password authetication. Currently bad credentials do not lead to any error or warning, your messages will just not be sent and you will not receive any messages.
+
+### Using MQTT v5
+Instead of creating a `Client` object, create a `Client_v5` object. Most functions like `publish`, `subscribe`, `loop` etc are overloaded to work the same way as for the v3.1.1 client, except some of them accept an optional keyword argument `properties`.
+This keyword argument can be set to a `PropertyList`. See the example [examples/09_MQTT5_properties.jl](examples/09_MQTT5_properties.jl) for an example on how to use properties, or consult `?PropertyList`.
 
 ### Advanced example
 
