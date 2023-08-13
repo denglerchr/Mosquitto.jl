@@ -26,7 +26,7 @@ function publish(client::Client_v5, topic::String, payload; qos::Int = 1, retain
     if waitcb && (rv == MosquittoCwrapper.MOSQ_ERR_SUCCESS)
         mid2 = mid.x - Cint(1)
         while mid.x != mid2
-            mid2 = take!(client.cbobjs.pub_channel)[1]
+            mid2 = take!(get_pub_channel(client))[1]
         end
     end
     return rv

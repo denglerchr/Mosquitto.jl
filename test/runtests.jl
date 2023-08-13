@@ -54,7 +54,7 @@ end
 
 
 client_v5 = Client_v5()
-testproplist = create_property_list("Hello", "World")
+testproplist = PropertyList("Hello", "World")
 
 @testset "Last Will v5" begin
     @test will_set(client_v5, "topic", "I disconnected due to some issue"; properties = testproplist) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
@@ -63,7 +63,8 @@ end
 
 @testset "Properties" begin
     
-    proplist = create_property_list("Hello", "World")
+    proplist = PropertyList()
+    add_property!(proplist, "Hello", "World")
     add_property!(proplist, "payload-format-indicator", UInt8(1))
     add_property!(proplist, "receive-maximum", UInt16(200))
     add_property!(proplist, "message-expiry-interval", UInt32(200))

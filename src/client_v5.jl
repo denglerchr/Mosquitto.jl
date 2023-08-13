@@ -13,7 +13,6 @@ end
 struct Client_v5<:AbstractClient
     id::String
     conn_status::Base.RefValue{Bool}
-    cbobjs::CallbackObjs_v5
     cptr::Cptrs_v5
 end
 
@@ -72,5 +71,5 @@ function Client_v5(; id::String = randstring(15),
     MosquittoCwrapper.disconnect_v5_callback_set(cmosc, cfunc_disconnect)
 
     # Create object
-    return Client_v5(id, Ref(false), cbobjs, Cptrs_v5(cmosc, cbobjs_ref) )
+    return Client_v5(id, Ref(false), Cptrs_v5(cmosc, cbobjs_ref) )
 end
