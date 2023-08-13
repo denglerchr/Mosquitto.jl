@@ -50,12 +50,15 @@ end
     loop(client)
 end
 
+
+
+
 client_v5 = Client_v5()
 testproplist = create_property_list("Hello", "World")
 
 @testset "Last Will v5" begin
     @test will_set(client_v5, "topic", "I disconnected due to some issue"; properties = testproplist) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
-    @test will_clear(client_v5) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
+    @test will_clear(client_v5) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS 
 end
 
 @testset "Properties" begin
@@ -99,7 +102,7 @@ end
         @test length(msg.properties) == 1
         if length(msg.properties) == 1
             @test msg.properties[1].name == "Hello"
-            @test String(msg.properties[1].val) == "World"
+            @test String(msg.properties[1].value) == "World"
         end
     end
     @test disconnect(client_v5) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
@@ -109,8 +112,7 @@ end
 
 ## Check for memory leaks
 # GC.gc()
-# freemem = Sys.free_memory()
-# for i = 1:300_000
+# while true
 #     proplist = create_property_list("payload-format-indicator", UInt8(1))
 #     add_property!(proplist, "receive-maximum", UInt16(200))
 #     add_property!(proplist, "message-expiry-interval", UInt32(200))
@@ -118,7 +120,6 @@ end
 #     add_property!(proplist, "authentication-data", UInt8[1, 2, 3])
 #     add_property!(proplist, "content-type", "hdf5")
 #     add_property!(proplist, "FOO", "BAR")
-#     properties = read_property_list(proplist)
+#     #properties = read_property_list(proplist)
 # end
 # GC.gc()
-# @test Sys.free_memory()-freemem < 100

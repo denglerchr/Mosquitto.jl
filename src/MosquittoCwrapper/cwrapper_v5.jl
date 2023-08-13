@@ -223,7 +223,7 @@ end
 function property_add_byte(proplist::Ref{Ptr{CmosquittoProperty}}, identifier::mqtt5_property, value::UInt8)
     msg_nr = ccall((:mosquitto_property_add_byte, libmosquitto), Cint,
                     (Ptr{Ptr{CmosquittoProperty}}, Cint, UInt8),
-                    proplist, Integer(identifier), value)
+                    proplist, Cint(identifier), value)
     return mosq_err_t(msg_nr)
 end
 
@@ -231,7 +231,7 @@ end
 function property_add_int16(proplist::Ref{Ptr{CmosquittoProperty}}, identifier::mqtt5_property, value::UInt16)
     msg_nr = ccall((:mosquitto_property_add_int16, libmosquitto), Cint,
                     (Ptr{Ptr{CmosquittoProperty}}, Cint, UInt16),
-                    proplist, Integer(identifier), value)
+                    proplist, Cint(identifier), value)
     return mosq_err_t(msg_nr)
 end
 
@@ -239,7 +239,7 @@ end
 function property_add_int32(proplist::Ref{Ptr{CmosquittoProperty}}, identifier::mqtt5_property, value::UInt32)
     msg_nr = ccall((:mosquitto_property_add_int32, libmosquitto), Cint,
                     (Ptr{Ptr{CmosquittoProperty}}, Cint, UInt32),
-                    proplist, Integer(identifier), value)
+                    proplist, Cint(identifier), value)
     return mosq_err_t(msg_nr)
 end
 
@@ -247,7 +247,7 @@ end
 function property_add_varint(proplist::Ref{Ptr{CmosquittoProperty}}, identifier::mqtt5_property, value::UInt32)
     msg_nr = ccall((:mosquitto_property_add_varint, libmosquitto), Cint,
                     (Ptr{Ptr{CmosquittoProperty}}, Cint, UInt32),
-                    proplist, Integer(identifier), value)
+                    proplist, Cint(identifier), value)
     return mosq_err_t(msg_nr)
 end
 
@@ -259,7 +259,7 @@ function property_add_binary(proplist::Ref{Ptr{CmosquittoProperty}}, identifier:
 
     msg_nr = ccall((:mosquitto_property_add_binary, libmosquitto), Cint,
                     (Ptr{Ptr{CmosquittoProperty}}, Cint, Ptr{Cvoid}, UInt16),
-                    proplist, Integer(identifier), value, UInt16(len))
+                    proplist, Cint(identifier), value, UInt16(len))
     return mosq_err_t(msg_nr)
 end
 
@@ -267,7 +267,7 @@ end
 function property_add_string(proplist::Ref{Ptr{CmosquittoProperty}}, identifier::mqtt5_property, value::String)
     msg_nr = ccall((:mosquitto_property_add_string, libmosquitto), Cint,
                     (Ptr{Ptr{CmosquittoProperty}}, Cint, Cstring),
-                    proplist, Integer(identifier), value)
+                    proplist, Cint(identifier), value)
     return mosq_err_t(msg_nr)
 end
 
@@ -277,7 +277,7 @@ function property_add_string_pair(proplist::Ref{Ptr{CmosquittoProperty}}, identi
 	value = pair[2]
     msg_nr = ccall((:mosquitto_property_add_string_pair, libmosquitto), Cint,
                     (Ptr{Ptr{CmosquittoProperty}}, Cint, Cstring, Cstring),
-                    proplist, Integer(identifier), name, value)
+                    proplist, Cint(identifier), name, value)
     return mosq_err_t(msg_nr)
 end
 
@@ -342,9 +342,8 @@ function property_read_binary(prop::Ptr{CmosquittoProperty}, identifier::mqtt5_p
         bytevec = UInt8[]
         success = false
     else
-        # TODO do we have to free memory here?
         bytevec = [unsafe_load(valref.x, i) for i = 1:lenref.x]
-        # Libc.free(valref.x)
+        Libc.free(valref.x)
         success = true
     end
     return bytevec, success
@@ -358,9 +357,8 @@ function property_read_string(prop::Ptr{CmosquittoProperty}, identifier::mqtt5_p
         strout = ""
         success = false
     else
-        # TODO do we have to free memory here?
         strout = unsafe_string(valref.x)
-        # Libc.free(valref.x)
+        Libc.free(valref.x)
         success = true
     end
     return strout, success
@@ -380,8 +378,8 @@ function property_read_string_pair(prop::Ptr{CmosquittoProperty}, identifier::mq
         # TODO do we have to free memory here?
         name_out = unsafe_string(nameref.x)
         val_out = unsafe_string(valref.x)
-        # Libc.free(nameref.x)
-        # Libc.free(valref.x)
+        Libc.free(nameref.x)
+        Libc.free(valref.x)
         pair_out = (name_out => val_out)
         success = true
     end
@@ -427,6 +425,12 @@ function property_free_all(proplist::Ref{Ptr{CmosquittoProperty}})
 end
 
 
+function property_copy_all(dest::Ref{Ptr{CmosquittoProperty}}, src::Ptr{CmosquittoProperty})
+    msg = ccall((:mosquitto_property_copy_all, libmosquitto), Cint, (Ptr{Ptr{CmosquittoProperty}}, Ptr{CmosquittoProperty}), dest, src)
+    return mosq_err_t(msg)
+end
+
+
 function property_check_all(command::mqtt_cmd, properties::Ptr{CmosquittoProperty})
     msg = ccall((:mosquitto_property_check_all, libmosquitto), Cint, (Cint, Ptr{CmosquittoProperty}), Cint(command), properties)
     return mosq_err_t(msg)
@@ -437,7 +441,7 @@ function property_identifier_to_string(identifier::mqtt5_property)
     if cstr == C_NULL
         return "Not found"
     else
-        str_out = unsafe_string(cstr) # not allowed to free this
+        str_out = unsafe_string(cstr) # not allowed to free cstr, or segfault
         return str_out
     end
 end

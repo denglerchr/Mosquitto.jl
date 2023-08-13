@@ -52,7 +52,7 @@ will_set(client::Client, topic::String, payload; qos::Int = 1, retain::Bool = fa
 """
     will_clear(client::Client)
 
-Remove a previously set will
+Remove a previously set will.
 """
 will_clear(client::AbstractClient) = MosquittoCwrapper.will_clear(client.cptr.mosc)
 

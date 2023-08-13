@@ -9,7 +9,12 @@ mutable struct PropertyList
 
     function PropertyList()
         proplist = new( Ref( Ptr{CmosquittoProperty}(UInt(C_NULL))) )
-        finalizer( x->MosquittoCwrapper.property_free_all(x.mosq_prop), proplist)
+        
+        finalizer(proplist) do x
+            MosquittoCwrapper.property_free_all(x.mosq_prop)
+            return nothing
+        end
+
         return proplist
     end
 end
@@ -71,7 +76,6 @@ function iterate(propptr::Ptr{CmosquittoProperty}, propptr_state)
     !isvalidproperty(nextprop) && return nothing
     return Property(nextprop), nextprop
 end
-
 
 """
 create_property_list(name::String, value::T) where {T}

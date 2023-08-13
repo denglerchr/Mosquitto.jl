@@ -1,6 +1,6 @@
 # Mosquitto.jl
 
-A wrapper around the [Mosquitto](https://mosquitto.org/) C Api. Currently only the MQTT 3.1 functionality is wrapped.
+A wrapper around the [Mosquitto](https://mosquitto.org/) C Api. Currently both MQTT 3.1.1 and MQTT 5 functionalities are wrapped.
 
 ## Installation
 Download the julia package by typing the following in your julia repl

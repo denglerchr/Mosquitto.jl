@@ -27,9 +27,9 @@ You will have to call the connect(client) function manually.
 Available keyword arguments:
 * `id`::String : the id of the client
 * `messages_channel`::Channel{MessageCB} : a channel that is receiving incoming messages
-* `autocleanse_message_channel`::Bool : default false, if true, automatically remove old messages if the `messages_channel` is full
+* `autocleanse_message_channel`::Bool : default true. If true, automatically remove old messages if the `messages_channel` is full
 * `connect_channel`::Channel{ConnectionCB} : a channel that is receiving incoming connect/disconnect events
-* `autocleanse_connect_channel`::Bool : default false, if true, automatically remove old messages if the `connect_channel` is full
+* `autocleanse_connect_channel`::Bool : default true. If true, automatically remove old messages if the `connect_channel` is full
 * `pub_channel`::Channel{Cint} : a channel that is receiving message ids for successfully published messages
 """
 function Client_v5(ip::String, port::Int=1883; kw...)
@@ -46,9 +46,9 @@ end
 
 function Client_v5(; id::String = randstring(15), 
                     messages_channel::Channel{MessageCB_v5} = Channel{MessageCB_v5}(20),
-                    autocleanse_message_channel::Bool = false,
+                    autocleanse_message_channel::Bool = true,
                     connect_channel::Channel{ConnectionCB_v5} = Channel{ConnectionCB_v5}(5),
-                    autocleanse_connect_channel::Bool = false,
+                    autocleanse_connect_channel::Bool = true,
                     pub_channel::Channel{Tuple{Cint, Cint}} = Channel{Tuple{Cint, Cint}}(5))
 
     # Create mosquitto object and save

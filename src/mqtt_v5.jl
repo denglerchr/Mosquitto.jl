@@ -4,8 +4,17 @@ function disconnect(client::Client_v5; properties::PropertyList = PropertyList()
     return flag
 end
 
-function will_set(client::Client_v5, topic::String, payload; qos::Int = 1, retain::Bool = false, properties::PropertyList = PropertyList()) 
-    return MosquittoCwrapper.will_set_v5(client.cptr.mosc, topic, payload; qos=qos, retain = retain, properties = properties.mosq_prop.x)
+function will_set(client::Client_v5, topic::String, payload; qos::Int = 1, retain::Bool = false, properties::PropertyList = PropertyList())
+    # Create a copy of properties, as Mosquitto will free by itself
+    propcopy = Ref(Ptr{CmosquittoProperty}(C_NULL))
+    if properties != C_NULL
+        msg1 = MosquittoCwrapper.property_copy_all(propcopy, properties.mosq_prop.x)
+        msg1 != MosquittoCwrapper.MOSQ_ERR_SUCCESS && error("Could not copy property list, gor $msg1")
+    end
+
+    # Pass copy to will set_v5
+    msg2 = MosquittoCwrapper.will_set_v5(client.cptr.mosc, topic, payload; qos=qos, retain = retain, properties = propcopy.x)
+    return msg2
 end
 
 
