@@ -4,6 +4,7 @@ function disconnect(client::Client_v5; properties::PropertyList = PropertyList()
     return flag
 end
 
+
 function will_set(client::Client_v5, topic::String, payload; qos::Int = 1, retain::Bool = false, properties::PropertyList = PropertyList())
     # Create a copy of properties, as Mosquitto will free by itself
     propcopy = Ref(Ptr{CmosquittoProperty}(C_NULL))

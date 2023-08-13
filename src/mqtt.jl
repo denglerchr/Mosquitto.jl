@@ -18,9 +18,10 @@ end
 
 
 """
-    disconnect(client::Client)
+    disconnect(client::AbstractClient)
 
-Disconnect the client.
+Disconnect the client. Keyword argument, only available with Client_v5:
+* properties = Properties() : a list of properties to append to the message.
 """
 function disconnect(client::Client)
     flag = MosquittoCwrapper.disconnect(client.cptr.mosc)
@@ -30,7 +31,7 @@ end
 
 
 """
-    reconnect(client::Client)
+    reconnect(client::AbstractClient)
 """
 function reconnect(client::AbstractClient)
     flag = MosquittoCwrapper.reconnect(client.cptr.mosc)
@@ -39,18 +40,24 @@ function reconnect(client::AbstractClient)
 end
 
 """
-    will_set(client::Client, topic::String, payload; qos::int = 1, retain::Bool = false)
+    will_set(client::AbstractClient, topic::String, payload; kw...)
 
 Must be called before connecting to the broker!
-Send a last will to the broker, which will be broadcasted in case
-the client disconnects unexpectedly. It will not be broadcasted if
+Send a last will to the broker, which will be broadcasted in case the client disconnects unexpectedly. It will not be broadcasted if
 the disconnect is clean using the disconnect function.
+
+Keyword arguments:
+* qos::int = 1
+* retain::Bool = false
+
+Additional keyword arguments, only available on Client_v5:
+* properties = Properties() : a list of properties to append to the message.
 """
 will_set(client::Client, topic::String, payload; qos::Int = 1, retain::Bool = false) = MosquittoCwrapper.will_set(client.cptr.mosc, topic, payload; qos=qos, retain = retain)
 
 
 """
-    will_clear(client::Client)
+    will_clear(client::AbstractClient)
 
 Remove a previously set will.
 """
@@ -58,12 +65,15 @@ will_clear(client::AbstractClient) = MosquittoCwrapper.will_clear(client.cptr.mo
 
 
 """
-    publish(client::Client, topic::String, payload; kw...)
+    publish(client::AbstractClient, topic::String, payload; kw...)
 
-Publish a message to the broker. Keyword arguments
+Publish a message to the broker. Keyword arguments:
 * qos::Int = 1 : Quality of service
 * retain::Bool = false : if true, the broker will store this message
 * waitcb = false : if true, wait until the message was received by the broker to return. If set to true, the network loop must run asynchronously, else the function might just block forever.
+
+Only available on Client_v5:
+* properties = Properties() : a list of properties to append to the message.
 """
 function publish(client::Client, topic::String, payload; qos::Int = 1, retain::Bool = false, waitcb::Bool = false) 
     mid = Ref(zero(Cint)) # message id
@@ -81,23 +91,31 @@ end
 
 
 """
-    subscribe(client::Client, topic::String; qos::Int = 1)
+    subscribe(client::AbstractClient, topic::String; kw...)
 
 Subscribe to a topic. Received messages will be accessible Mosquitto.messages_channel as a Tuple{String, Vector{Uint8}}.
+
+Keyword arguments:
+* qos::Int = 1
+
+Additional keyword arguments, only available on Client_v5:
+* properties = Properties() : a list of properties to append to the message.
 """
 subscribe(client::Client, topic::String; qos::Int = 1) = MosquittoCwrapper.subscribe(client.cptr.mosc, topic; qos = qos)
 
 
 """
-    unsubscribe(client::Client, topic::String)
+    unsubscribe(client::AbstractClient, topic::String)
 
 Unsubscribe from a topic.
+Additional keyword argument, only available on Client_v5:
+* properties = Properties() : a list of properties to append to the message.
 """
 unsubscribe(client::Client, topic::String) = MosquittoCwrapper.unsubscribe(client.cptr.mosc, topic)
 
 
 """
-    loop(client::Client; timeout::Int = 1000, ntimes::Int = 1)
+    loop(client::AbstractClient; timeout::Int = 1000, ntimes::Int = 1)
 
 Perform a network loop. This will get messages of subscriptions and send published messages.
 """
