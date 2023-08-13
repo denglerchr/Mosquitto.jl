@@ -23,7 +23,6 @@ abstract type AbstractClient end
 struct Client<:AbstractClient
     id::String
     conn_status::Base.RefValue{Bool}
-    cbobjs::CallbackObjs
     cptr::Cptrs
 end
 
@@ -84,8 +83,9 @@ function Client(; id::String = randstring(15),
     MosquittoCwrapper.disconnect_callback_set(cmosc, cfunc_disconnect)
 
     # Create object
-    return Client(id, Ref(false), cbobjs, Cptrs(cmosc, cbobjs_ref) )
+    return Client(id, Ref(false), Cptrs(cmosc, cbobjs_ref) )
 end
 
-get_messages_channel(client::AbstractClient) = client.cbobjs.messages_channel
-get_connect_channel(client::AbstractClient) = client.cbobjs.connect_channel
+get_messages_channel(client::AbstractClient) = client.cptr.callbackobjs.x.messages_channel
+get_connect_channel(client::AbstractClient) = client.cptr.callbackobjs.x.connect_channel
+get_pub_channel(client::AbstractClient) = client.cptr.callbackobjs.x.pub_channel
