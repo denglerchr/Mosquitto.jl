@@ -29,7 +29,7 @@ end
 
 
 function show(io::IO, client::AbstractClient)
-    println("MQTTClient_$(client.id)")
+    println(io, "MQTTClient_$(client.id)")
 end
 
 

@@ -5,10 +5,10 @@ Container for mqtt properties. Create using `create_property_list` and add items
 Extract single properties using `read_property_list`.
 """
 mutable struct PropertyList
-    mosq_prop::Ref{Ptr{CmosquittoProperty}}
+    mosq_prop::Base.RefValue{Ptr{CmosquittoProperty}}
 
     function PropertyList()
-        proplist = new( Ptr{CmosquittoProperty}(UInt(C_NULL)) )
+        proplist = new( Ref( Ptr{CmosquittoProperty}(UInt(C_NULL))) )
         finalizer( x->MosquittoCwrapper.property_free_all(x.mosq_prop), proplist)
         return proplist
     end

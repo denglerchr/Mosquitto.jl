@@ -2,6 +2,7 @@ using Mosquitto
 
 client_v5 = Client_v5()
 testproplist = create_property_list("Hello", "World")
+MosquittoCwrapper.property_check_all(MosquittoCwrapper.CMD_PUBLISH, testproplist.mosq_prop.x)
 
 connect(client_v5, "localhost", 1883)
 subscribe(client_v5, "JuliaBugTest")
@@ -19,5 +20,5 @@ msg.properties
 
 if length(msg.properties) == 1
     msg.properties[1].name == "Hello"
-    String(msg.properties[1].val) == "World"
+    String(msg.properties[1].value) == "World"
 end

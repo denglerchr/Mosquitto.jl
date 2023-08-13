@@ -66,6 +66,10 @@ get the string representation. Defined in `mqtt_protocol.h`.
 	MQTT_PROP_SHARED_SUB_AVAILABLE = 42		 #  Byte :				CONNACK */
 end
 
+
+"""
+Possible types of the values that go together with a mqtt5_property.
+"""
 @enum mqtt5_property_type begin
 	MQTT_PROP_TYPE_BYTE = 1
 	MQTT_PROP_TYPE_INT16 = 2
@@ -75,6 +79,63 @@ end
 	MQTT_PROP_TYPE_STRING = 6
 	MQTT_PROP_TYPE_STRING_PAIR = 7
 end
+
+"""
+ Enum: mqtt5_sub_options
+  Options for use with MQTTv5 subscriptions.
+ 
+  MQTT_SUB_OPT_NO_LOCAL - with this option set, if this client publishes to
+  a topic to which it is subscribed, the broker will not publish the
+  message back to the client.
+ 
+  MQTT_SUB_OPT_RETAIN_AS_PUBLISHED - with this option set, messages
+  published for this subscription will keep the retain flag as was set by
+  the publishing client. The default behaviour without this option set has
+  the retain flag indicating whether a message is fresh/stale.
+ 
+  MQTT_SUB_OPT_SEND_RETAIN_ALWAYS - with this option set, pre-existing
+  retained messages are sent as soon as the subscription is made, even
+  if the subscription already exists. This is the default behaviour, so
+  it is not necessary to set this option.
+ 
+  MQTT_SUB_OPT_SEND_RETAIN_NEW - with this option set, pre-existing retained
+  messages for this subscription will be sent when the subscription is made,
+  but only if the subscription does not already exist.
+ 
+  MQTT_SUB_OPT_SEND_RETAIN_NEVER - with this option set, pre-existing
+  retained messages will never be sent for this subscription.
+"""
+@enum mqtt5_sub_options begin
+	MQTT_SUB_OPT_NO_LOCAL = Cint(0x04)
+	MQTT_SUB_OPT_RETAIN_AS_PUBLISHED = Cint(0x08)
+	MQTT_SUB_OPT_SEND_RETAIN_ALWAYS = Cint(0x00)
+	MQTT_SUB_OPT_SEND_RETAIN_NEW = Cint(0x10)
+	MQTT_SUB_OPT_SEND_RETAIN_NEVER = Cint(0x20)
+end
+
+
+"""
+Possible commands, can be used in mosquitto_property_check_all.
+"""
+@enum mqtt_cmd begin
+    CMD_CONNECT = Cint(0x10)
+    CMD_CONNACK = Cint(0x20)
+    CMD_PUBLISH = Cint(0x30)
+    CMD_PUBACK = Cint(0x40)
+    CMD_PUBREC = Cint(0x50)
+    CMD_PUBREL = Cint(0x60)
+    CMD_PUBCOMP = Cint(0x70)
+    CMD_SUBSCRIBE = Cint(0x80)
+    CMD_SUBACK = Cint(0x90)
+    CMD_UNSUBSCRIBE = Cint(0xA0)
+    CMD_UNSUBACK = Cint(0xB0)
+    CMD_PINGREQ = Cint(0xC0)
+    CMD_PINGRESP = Cint(0xD0)
+    CMD_DISCONNECT = Cint(0xE0)
+    CMD_AUTH = Cint(0xF0)
+    CMD_WILL = Cint(0x100) # only Mosquitto
+end
+
 
 # map the mqtt5_property_type to a corresponding Julia type
 @inline function get_julia_type(t::mqtt5_property_type)
@@ -103,11 +164,12 @@ end
 
 # Publishing, subscribing, unsubscribing
 
-function publish_v5(client::Ref{Cmosquitto}, mid, topic::String, payload; 
+function publish_v5(client::Ref{Cmosquitto}, mid::Ref{Cint}, topic::String, payload; 
                 qos::Int = 1, retain::Bool = true, properties::Ref{CmosquittoProperty} = C_NULL)
+
     payloadnew = getbytes(payload)
     payloadlen = length(payloadnew) # dont use sizeof, as payloadnew might be of type "reinterpreted"
-    msg_nr = ccall((:mosquitto_publish, libmosquitto), Cint,
+    msg_nr = ccall((:mosquitto_publish_v5, libmosquitto), Cint,
                     (Ptr{Cmosquitto}, Ptr{Cint}, Cstring, Cint, Ptr{UInt8}, Cint, Bool, Ptr{CmosquittoProperty}), 
                     client, mid, topic, payloadlen, payloadnew, qos, retain, properties)
     return mosq_err_t(msg_nr)
@@ -115,9 +177,11 @@ end
 
 function subscribe_v5(client::Ref{Cmosquitto}, sub::String; qos::Int = 1, properties::Ref{CmosquittoProperty} = C_NULL)
     mid = zeros(Cint, 1)
+    options = Cint(MQTT_SUB_OPT_SEND_RETAIN_ALWAYS) # default, can be combined using or
+
     msg_nr = ccall((:mosquitto_subscribe_v5, libmosquitto), Cint, 
-    (Ptr{Cmosquitto}, Ptr{Cint}, Cstring, Cint, Ptr{CmosquittoProperty}),
-    client, mid, sub, qos, properties)
+                (Ptr{Cmosquitto}, Ptr{Cint}, Cstring, Cint, Cint, Ptr{CmosquittoProperty}),
+                client, mid, sub, qos, options, properties)
     return mosq_err_t(msg_nr)
 end
 
@@ -362,6 +426,11 @@ function property_free_all(proplist::Ref{Ptr{CmosquittoProperty}})
     return ccall((:mosquitto_property_free_all, libmosquitto), Cvoid, (Ptr{Ptr{CmosquittoProperty}},), proplist)
 end
 
+
+function property_check_all(command::mqtt_cmd, properties::Ptr{CmosquittoProperty})
+    msg = ccall((:mosquitto_property_check_all, libmosquitto), Cint, (Cint, Ptr{CmosquittoProperty}), Cint(command), properties)
+    return mosq_err_t(msg)
+end
 
 function property_identifier_to_string(identifier::mqtt5_property)
     cstr = ccall((:mosquitto_property_identifier_to_string, libmosquitto), Cstring, (Cint,), Integer(identifier))
