@@ -19,7 +19,7 @@ struct ConnectionCB with fields
 """
 struct ConnectionCB
     val::UInt8
-    returncode::mosq_err_t
+    returncode::MosquittoCwrapper.mosq_err_t
 end
 
 
@@ -43,9 +43,9 @@ end
 
 # This callback function puts any message on arrival in the channel
 # messages_channel which is a Channel{Mosquitto.Message}(20)
-# The CMosquittoMessage does not have to be free-ed, it is free-ed by Mosquitto
+# The CmosquittoMessage does not have to be free-ed, it is free-ed by Mosquitto
 # according to https://github.com/eclipse/mosquitto/issues/549
-function callback_message(mos::Ptr{Cmosquitto}, obj::Ptr{CallbackObjs}, message::Ptr{CMosquittoMessage}) #, clientid::String)
+function callback_message(mos::Ptr{Cmosquitto}, obj::Ptr{CallbackObjs}, message::Ptr{CmosquittoMessage})
     # get topic and payload from the message
     jlmessage = unsafe_load(message)
     jlpayload = [unsafe_load(jlmessage.payload, i) for i = 1:jlmessage.payloadlen]
@@ -76,7 +76,7 @@ function callback_connect(mos::Ptr{Cmosquitto}, obj::Ptr{CallbackObjs}, rc::Cint
     if cbobjs.autocleanse[2] && Base.n_avail(cbobjs.connect_channel)>=cbobjs.connect_channel.sz_max
         popfirst!(cbobjs.connect_channel)
     end
-    put!( cbobjs.connect_channel, ConnectionCB( one(UInt8), mosq_err_t(rc) ) )
+    put!( cbobjs.connect_channel, ConnectionCB( one(UInt8), MosquittoCwrapper.mosq_err_t(rc) ) )
     return nothing
 end
 
@@ -86,6 +86,6 @@ function callback_disconnect(mos::Ptr{Cmosquitto}, obj::Ptr{CallbackObjs}, rc::C
     if cbobjs.autocleanse[2] && Base.n_avail(cbobjs.connect_channel)>=cbobjs.connect_channel.sz_max
         popfirst!(cbobjs.connect_channel)
     end
-    put!( cbobjs.connect_channel, ConnectionCB( zero(UInt8), mosq_err_t(rc) ) )
+    put!( cbobjs.connect_channel, ConnectionCB( zero(UInt8), MosquittoCwrapper.mosq_err_t(rc) ) )
     return nothing
 end
