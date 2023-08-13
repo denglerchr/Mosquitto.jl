@@ -1,8 +1,9 @@
 """
     mutable struct PropertyList
 
-Container for mqtt properties. Create using `create_property_list` and add items using `add_property!`.
-Extract single properties using `read_property_list`.
+Container for mqtt properties. Create using `PropertyList()` or `PropertyList(name, value)` and add items using `add_property!`.
+Extract properties using `read_property_list`. 
+See help of `MosquittoCwrapper.mqtt5_property` and `MosquittoCwrapper.property_identifier_to_string` for valid inputs.
 """
 mutable struct PropertyList
     mosq_prop::Base.RefValue{Ptr{CmosquittoProperty}}
@@ -18,6 +19,13 @@ mutable struct PropertyList
         return proplist
     end
 end
+
+function PropertyList(name::String, value::T) where {T}
+    proplist = PropertyList()
+    add_property!(proplist, name, value)
+    return proplist
+end
+
 
 struct Property
     name::String
@@ -77,24 +85,12 @@ function iterate(propptr::Ptr{CmosquittoProperty}, propptr_state)
     return Property(nextprop), nextprop
 end
 
-"""
-create_property_list(name::String, value::T) where {T}
-
-Create a list containing mqtt properties. Initiates with a single entry, more can be added with
-`add_property!`. 
-See help of `mqtt5_property` and `property_identifier_to_string` for valid inputs.
-"""
-function create_property_list(name::String, value::T) where {T}
-    proplist = PropertyList()
-    add_property!(proplist, name, value)
-    return proplist
-end
-
 
 """
 add_property!(proplist::PropertyList, name::String, value::T) where {T}
 
-Add a property to an existing property list
+Add a property to an existing property list.
+See help of `MosquittoCwrapper.mqtt5_property` and `MosquittoCwrapper.property_identifier_to_string` for valid inputs.
 """
 function add_property!(proplist::PropertyList, name::String, value::T) where {T}
 
