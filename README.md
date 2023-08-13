@@ -1,6 +1,6 @@
 # Mosquitto.jl
 
-A wrapper around the [Mosquitto](https://mosquitto.org/) C Api. Currently both MQTT v3.1.1 and MQTT 5 functionalities are wrapped.
+A wrapper around the [Mosquitto](https://mosquitto.org/) C Api. MQTT v3.1.1 and MQTT 5 functionalities are wrapped.
 
 ## Installation
 Download the julia package by typing the following in your julia repl
@@ -118,7 +118,7 @@ connect(client, "test.mosquitto.org", 8885; username = "rw", password = "readwri
 # To know if there was a connection/disconnection, the channel
 # get_connect_channel(client) is used.
 function onconnect(c)
-    nmessages == 0
+    nmessages = 0
 
     # Treat all events
     while !isempty(get_connect_channel(c))
@@ -139,7 +139,7 @@ end
 # To know if a message was received, we check
 # the channel msg_channel = get_messages_channel(client).
 function onmessage(mrcount, client)
-    nmessages == 0
+    nmessages = 0
     msg_channel = get_messages_channel(client)
 
     # At this point, a message was received, lets process it
