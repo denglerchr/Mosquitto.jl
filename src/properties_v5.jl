@@ -26,7 +26,15 @@ function PropertyList(name::String, value::T) where {T}
     return proplist
 end
 
+"""
+struct Property
 
+A struct with fields:
+* name:: String -> the topic where the message was received from
+* value::Vector{UInt8} -> the value as a byte array
+* prop::MosquittoCwrapper.mqtt5_property -> the assigned MQTT5 property
+* type::MosquittoCwrapper.mqtt5_property_type -> the data type that comes with this MQTT5 property
+"""
 struct Property
     name::String
     value::Vector{UInt8}
@@ -87,7 +95,7 @@ end
 
 
 """
-add_property!(proplist::PropertyList, name::String, value::T) where {T}
+    add_property!(proplist::PropertyList, name::String, value::T) where {T}
 
 Add a property to an existing property list.
 See help of `MosquittoCwrapper.mqtt5_property` and `MosquittoCwrapper.property_identifier_to_string` for valid inputs.
@@ -137,7 +145,7 @@ end
 
 
 """
-read_property_list(props::PropertyList)
+    read_property_list(props::PropertyList)
 
 Extract a vector of `Property` out of the propertylist.
 """

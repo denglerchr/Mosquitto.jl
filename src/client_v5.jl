@@ -17,12 +17,12 @@ struct Client_v5<:AbstractClient
 end
 
 """
-    Client(ip::String, port::Int=1883; kw...)
-    Client(; kw...)
+    Client_v5(ip::String, port::Int=1883; kw...)
+    Client_v5(; kw...)
 
-Create a client connection to an MQTT broker. The id should be unique per connection. If ip and port are specified, the
-client will immediately connect to the broker. Use the version without ip and port if you need to connect with user/password.
-You will have to call the connect(client) function manually.
+Create a client connection to an MQTT broker using the protocol version 5. The id should be unique per connection. If ip and port are specified, the
+client will try to immediately connect to the broker. Use the version without ip and port if you need to connect with user/password,
+set a will or similar. In that case, you will have to call the `connect(client)` function manually.
 Available keyword arguments:
 * `id`::String : the id of the client
 * `messages_channel`::Channel{MessageCB} : a channel that is receiving incoming messages

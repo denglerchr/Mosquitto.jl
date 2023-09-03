@@ -1,6 +1,5 @@
 """
 struct MessageCB with fields
-* clientid::String -> the id of the client that received the message
 * topic:: String -> the topic where the message was received from
 * payload::Vector{UInt8} -> the message content
 
@@ -13,7 +12,6 @@ end
 
 """
 struct ConnectionCB with fields
-* clientid::String -> the id of the client that had a connection event
 * val::UInt8 -> 0 on disconnect and 1 on connect.
 * returncode::mosq_err_t -> the MQTT return code, possible value in mosq_err_t
 """
@@ -23,16 +21,15 @@ struct ConnectionCB
 end
 
 
-"""
-struct CallbackObjs with fields
-* messages_channel::Channel{MessageCB}
-* connect_channel::Channel{ConnectionCB}
-* pub_channel::Channel{Cint}
-* autocleanse::Tuple{Bool, Bool}
 
-Contains Julia objects used in the Mosquitto callback functions. Passed to the
-callback functions as a pointer.
-"""
+# struct CallbackObjs with fields
+# * messages_channel::Channel{MessageCB}
+# * connect_channel::Channel{ConnectionCB}
+# * pub_channel::Channel{Cint}
+# * autocleanse::Tuple{Bool, Bool}
+
+# Contains Julia objects used in the Mosquitto callback functions. Passed to the
+# callback functions as a pointer.
 struct CallbackObjs
     messages_channel::Channel{MessageCB}
     connect_channel::Channel{ConnectionCB}

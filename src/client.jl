@@ -1,11 +1,9 @@
 import Base.n_avail, Base.show
 
-"""
-struct Cobj with fields
-* mosc::Ptr{Cmosquitto}
+# struct Cobj with fields
+# * mosc::Ptr{Cmosquitto}
 
-Container storing required pointers of the client.
-"""
+# Container storing required pointers of the client.
 mutable struct Cptrs
     mosc::Ptr{Cmosquitto}
     callbackobjs::Base.RefValue{CallbackObjs}
@@ -37,8 +35,8 @@ end
     Client(; kw...)
 
 Create a client connection to an MQTT broker. The id should be unique per connection. If ip and port are specified, the
-client will immediately connect to the broker. Use the version without ip and port if you need to connect with user/password.
-You will have to call the connect(client) function manually.
+client will try to immediately connect to the broker. Use the version without ip and port if you need to connect with user/password,
+set a will or similar. In that case, you will have to call the `connect(client)` function manually.
 Available keyword arguments:
 * `id`::String : the id of the client
 * `messages_channel`::Channel{MessageCB} : a channel that is receiving incoming messages
@@ -86,6 +84,20 @@ function Client(; id::String = randstring(15),
     return Client(id, Ref(false), Cptrs(cmosc, cbobjs_ref) )
 end
 
+"""
+    get_messages_channel(client::AbstractClient)
+
+Returns the channel that contains received messages for the client
+"""
 get_messages_channel(client::AbstractClient) = client.cptr.callbackobjs.x.messages_channel
+
+"""
+    <get_connect_channel(client::AbstractClient)
+
+Returns the channel that contains messages on connect or diconnect events for the client
+"""
 get_connect_channel(client::AbstractClient) = client.cptr.callbackobjs.x.connect_channel
+
+# Returns the channel that contains message ids of successfully publishes messages
+# according to the qos chosen.
 get_pub_channel(client::AbstractClient) = client.cptr.callbackobjs.x.pub_channel
