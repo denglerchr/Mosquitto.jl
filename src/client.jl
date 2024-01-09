@@ -39,7 +39,7 @@ client will try to immediately connect to the broker. Use the version without ip
 set a will or similar. In that case, you will have to call the `connect(client)` function manually.
 Available keyword arguments:
 * `id`::String : the id of the client
-* `clean_session``::Bool : set to true to instruct the broker to clean all messages and subscriptions on disconnect, false to instruct it to keep them.
+* `clean_session`::Bool : Default is true. Set to true to instruct the broker to clean all messages and subscriptions on disconnect, false to instruct it to keep them.
 * `messages_channel`::Channel{MessageCB} : a channel that is receiving incoming messages
 * `autocleanse_message_channel`::Bool : default true. If true, automatically remove old messages if the `messages_channel` is full
 * `connect_channel`::Channel{ConnectionCB} : a channel that is receiving incoming connect/disconnect events
