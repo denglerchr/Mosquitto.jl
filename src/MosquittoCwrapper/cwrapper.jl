@@ -90,8 +90,8 @@ end
 
 # Client creation, destruction, and reinitialisation
 
-function mosquitto_new(id::String, clean_start::Bool, obj)
-    return ccall((:mosquitto_new, libmosquitto), Ptr{Cmosquitto}, (Cstring, Bool, Ptr{Cvoid}), id, clean_start, obj)
+function mosquitto_new(id::String, clean_session::Bool, obj)
+    return ccall((:mosquitto_new, libmosquitto), Ptr{Cmosquitto}, (Cstring, Bool, Ptr{Cvoid}), id, clean_session, obj)
 end
 
 

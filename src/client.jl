@@ -39,6 +39,7 @@ client will try to immediately connect to the broker. Use the version without ip
 set a will or similar. In that case, you will have to call the `connect(client)` function manually.
 Available keyword arguments:
 * `id`::String : the id of the client
+* `clean_session``::Bool : set to true to instruct the broker to clean all messages and subscriptions on disconnect, false to instruct it to keep them.
 * `messages_channel`::Channel{MessageCB} : a channel that is receiving incoming messages
 * `autocleanse_message_channel`::Bool : default true. If true, automatically remove old messages if the `messages_channel` is full
 * `connect_channel`::Channel{ConnectionCB} : a channel that is receiving incoming connect/disconnect events
@@ -57,7 +58,8 @@ function Client(ip::String, port::Int=1883; kw...)
     return client
 end
 
-function Client(; id::String = randstring(15), 
+function Client(; id::String = randstring(15),
+        clean_session::Bool = true,
         messages_channel::Channel{MessageCB} = Channel{MessageCB}(20),
         autocleanse_message_channel::Bool = true,
         connect_channel::Channel{ConnectionCB} = Channel{ConnectionCB}(5),
@@ -67,7 +69,7 @@ function Client(; id::String = randstring(15),
     # Create mosquitto object and save
     cbobjs = CallbackObjs(messages_channel, connect_channel, pub_channel, (autocleanse_message_channel, autocleanse_connect_channel))
     cbobjs_ref = Ref(cbobjs)#pointer_from_objref(channel)
-    cmosc = MosquittoCwrapper.mosquitto_new(id, true, cbobjs_ref)
+    cmosc = MosquittoCwrapper.mosquitto_new(id, clean_session, cbobjs_ref)
 
     # Set callbacks
     cfunc_message = @cfunction(callback_message, Cvoid, (Ptr{Cmosquitto}, Ptr{CallbackObjs}, Ptr{CmosquittoMessage}))
