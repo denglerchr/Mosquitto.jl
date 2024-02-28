@@ -14,8 +14,9 @@ function onconnect(client)
     for _ = 1:nmessages
         conncb = take!(get_connect_channel(client))
         if conncb.val == 1
-            println("Connection of client $(client.id) successfull (return code $(conncb.returncode)), subscribing to test/#")
-            subscribe(client, "test/#")
+            topic = "test/#"
+            println("Connection of client $(client.id) successfull (return code $(conncb.returncode)), subscribing to $(topic)")
+            subscribe(client, topic)
         elseif conncb.val == 0
             println("Client $(client.id) disconnected")
         end
