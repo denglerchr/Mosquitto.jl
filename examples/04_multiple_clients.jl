@@ -6,11 +6,6 @@
 
 using Mosquitto
 
-# Connect to multiple brokers
-client1 = Client("test.mosquitto.org", 1883) # will receive message
-client2 = Client("localhost", 1883) # will publish to localhost
-client3 = Client("localhost", 1883) # will receive from localhost
-
 # subscribe to a topic on connection event
 function subonconnect(client::Client, topic::String)
     # check channel, if there is something todo
@@ -54,22 +49,30 @@ function printmessages(client)
     return 0
 end
 
-# Messages will be put as a Message struct
-# the channel Mosquitto.messages_channel.
-for i = 1:200
-    loop(client1; timeout = 100)
-    loop(client2; timeout = 100)
-    loop(client3; timeout = 100)
-
-    subonconnect(client1, "test/#")
-    subonconnect(client3, "julia")
-    forwardmessages(client1, client2)
-    printmessages(client3)
-    rand()<0.1 && publish(client1, "test/julia", "From client 1"; retain = false)
+function main()
+    # Connect to multiple brokers
+    client1 = Client("test.mosquitto.org", 1883) # will receive message
+    client2 = Client("localhost", 1883) # will publish to localhost
+    client3 = Client("localhost", 1883) # will receive from localhost
+    
+    # Messages will be put as a Message struct
+    # the channel Mosquitto.messages_channel.
+    for i = 1:200
+        loop(client1; timeout = 100)
+        loop(client2; timeout = 100)
+        loop(client3; timeout = 100)
+    
+        subonconnect(client1, "test/#")
+        subonconnect(client3, "julia")
+        forwardmessages(client1, client2)
+        printmessages(client3)
+        rand()<0.1 && publish(client1, "test/julia", "From client 1"; retain = false)
+    end
+    
+    # Close everything
+    disconnect(client1)
+    disconnect(client2)
+    disconnect(client3)
 end
 
-
-# Close everything
-disconnect(client1)
-disconnect(client2)
-disconnect(client3)
+main()
