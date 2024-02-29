@@ -1,9 +1,6 @@
 # Read 20 messages in topic "test/..." from the public broker test.mosquitto.org
 using Mosquitto
 
-# Connect to a broker
-client = Client("test.mosquitto.org", 1883)
-
 # subscribe to topic "test" every time the client connects
 function onconnect(client)
     # Check if something happened, else return 0
@@ -43,6 +40,9 @@ end
 
 
 function main()
+    # Connect to a broker
+    client = Client("test.mosquitto.org", 1883)    
+
     # Messages will be put as a tuple in
     # the channel Mosquitto.messages_channel.
     mrcount = 0
