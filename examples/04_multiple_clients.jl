@@ -33,7 +33,7 @@ function forwardmessages(client1, client2)
         # Do something with the message
         if temp.topic == "test/julia"
             msg = String(temp.payload)
-            println("Message from client $(client.id)")
+            println("Message from client $(client1.id) to $(client2.id)")
             println("\ttopic: $(temp.topic)\tmessage:$msg")
 
             # republish
