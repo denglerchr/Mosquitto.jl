@@ -42,15 +42,20 @@ function onmessage(mrcount, client)
 end
 
 
-# Messages will be put as a tuple in
-# the channel Mosquitto.messages_channel.
-mrcount = 0
-while mrcount < 20
-    loop(client) # network loop
-    onconnect(client) # check for connection/disconnection
-    mrcount += onmessage(mrcount, client) # check for messages
+function main()
+    # Messages will be put as a tuple in
+    # the channel Mosquitto.messages_channel.
+    mrcount = 0
+    while mrcount < 20
+        loop(client) # network loop
+        onconnect(client) # check for connection/disconnection
+        mrcount += onmessage(mrcount, client) # check for messages
+    end
+
+    # Close everything
+    disconnect(client)
+    loop(client)
 end
 
-# Close everything
-disconnect(client)
-loop(client)
+
+main()
