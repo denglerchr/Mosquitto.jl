@@ -1,12 +1,6 @@
 # Read 20 messages in topic "test/..." from the public broker test.mosquitto.org
 using Mosquitto
 
-# Connect to a broker
-client = Client("test.mosquitto.org", 1883)
-
-# subscribe to topic "test"
-subscribe(client, "test/#")
-
 function onmessage(nmin, client)
     messages_channel = get_messages_channel(client)
     nmessages = Base.n_avail(messages_channel)
@@ -20,15 +14,25 @@ function onmessage(nmin, client)
     return nmessages
 end
 
-# Messages will be put in
-# the clients channel.
-nmessages = 0
-while nmessages<20
-    # Take the message on arrival
+function main()
+    # Connect to a broker
+    client = Client("test.mosquitto.org", 1883)
+    
+    # subscribe to topic "test"
+    subscribe(client, "test/#")
+    
+    # Messages will be put in
+    # the clients channel.
+    nmessages = 0
+    while nmessages<20
+        # Take the message on arrival
+        loop(client)
+        nmessages += onmessage(nmessages, client)
+    end
+
+    # Close everything
+    disconnect(client)
     loop(client)
-    nmessages += onmessage(nmessages, client)
 end
 
-# Close everything
-disconnect(client)
-loop(client)
+main()

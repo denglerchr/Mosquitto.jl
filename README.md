@@ -155,16 +155,21 @@ function onmessage(mrcount, client)
 end
 
 
-# We trigger the loop manually until we have received at least
-# 20 messages
-mrcount = 0
-while mrcount < 20
-    loop(client) # network loop
-    onconnect(client) # check for connection/disconnection
-    mrcount += onmessage(mrcount, client) # check for messages
+function main()
+    # We trigger the loop manually until we have received at least
+    # 20 messages
+    mrcount = 0
+    while mrcount < 20
+        loop(client) # network loop
+        onconnect(client) # check for connection/disconnection
+        mrcount += onmessage(mrcount, client) # check for messages
+    end
+
+    # Disconnect the client
+    disconnect(client)
+    loop(client)
 end
 
-# Disconnect the client
-disconnect(client)
-loop(client)
+
+main()
 ```
