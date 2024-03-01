@@ -14,7 +14,9 @@ function onconnect(client)
     for _ = 1:nmessages
         conncb = take!(get_connect_channel(client))
         if conncb.val == 1
-            println("Connection of client $(client.id) successfull (return code $(conncb.returncode)), subscribing to test/#")
+            println(
+                "Connection of client $(client.id) successfull (return code $(conncb.returncode)), subscribing to test/#",
+            )
             subscribe(client, "test/#")
         elseif conncb.val == 0
             println("Client $(client.id) disconnected")
@@ -34,7 +36,7 @@ function onmessage(mrcount, client)
         temp = take!(get_messages_channel(client))
         println("Message $(mrcount+i):")
         message = String(temp.payload)
-        length(message) > 20 && (message = message[1:18]*"...")
+        length(message) > 20 && (message = message[1:18] * "...")
         println("\ttopic: $(temp.topic)\tmessage:$(message)")
     end
     return nmessages

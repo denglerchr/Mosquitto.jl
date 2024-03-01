@@ -17,7 +17,12 @@ function main()
     loop(client)
 
     # Publish with properties
-    publish(client, topic, "Hello World from an MQTTv5 client with properties"; properties = proplist)
+    publish(
+        client,
+        topic,
+        "Hello World from an MQTTv5 client with properties";
+        properties = proplist,
+    )
     loop(client; ntimes = 5)
 
     # Extract all messages to only save the last (probably the one that was sent)

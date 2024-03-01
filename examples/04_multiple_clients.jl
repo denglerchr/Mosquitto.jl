@@ -46,7 +46,7 @@ end
 function printmessages(client)
     while !isempty(get_messages_channel(client))
         temp = take!(get_messages_channel(client))
-        
+
         msg = String(temp.payload)
         println("Message from client $(client.id)")
         println("\ttopic: $(temp.topic)\tmessage:$msg")
@@ -65,7 +65,7 @@ for i = 1:200
     subonconnect(client3, "julia")
     forwardmessages(client1, client2)
     printmessages(client3)
-    rand()<0.1 && publish(client1, "test/julia", "From client 1"; retain = false)
+    rand() < 0.1 && publish(client1, "test/julia", "From client 1"; retain = false)
 end
 
 

@@ -13,7 +13,9 @@ function onconnect(client)
     while !disconnect
         conncb = take!(get_connect_channel(client))
         if conncb.val == 1
-            println("Connection of client $(client.id) successfull ($(conncb.returncode)), subscribing to test/#")
+            println(
+                "Connection of client $(client.id) successfull ($(conncb.returncode)), subscribing to test/#",
+            )
             subscribe(client, "test/#")
         elseif conncb.val == 0
             println("Client $(client.id) disconnected ($(conncb.returncode))")
@@ -32,7 +34,7 @@ function onmessage(client)
         msgcount += 1
         println("Message $(msgcount):")
         message = String(temp.payload)
-        length(message) > 20 && (message = message[1:18]*"...")
+        length(message) > 20 && (message = message[1:18] * "...")
         println("\ttopic: $(temp.topic)\tmessage:$(message)")
     end
     disconnect(client) # this will later make loop_forever return

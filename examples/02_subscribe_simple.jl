@@ -23,7 +23,7 @@ end
 # Messages will be put in
 # the clients channel.
 nmessages = 0
-while nmessages<20
+while nmessages < 20
     # Take the message on arrival
     loop(client)
     nmessages += onmessage(nmessages, client)
