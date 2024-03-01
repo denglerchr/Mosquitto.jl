@@ -153,7 +153,7 @@ disconnect(client) is called. This is a slower version of loop_forever, however 
 function loop_forever2(client::AbstractClient; timeout::Int = 10)
     rc = MosquittoCwrapper.MOSQ_ERR_SUCCESS
     while rc != MosquittoCwrapper.MOSQ_ERR_NO_CONN
-        rc = MosquittoCwrapper.loop(client; timeout = timeout)
+        rc = loop(client; timeout = timeout)
         yield()
     end
     return MosquittoCwrapper.MOSQ_ERR_SUCCESS
