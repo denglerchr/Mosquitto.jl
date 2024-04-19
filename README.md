@@ -3,8 +3,8 @@
 A wrapper around the [Mosquitto](https://mosquitto.org/) C Api. MQTT v3.1.1 and MQTT 5 functionalities are wrapped.
 
 ## Installation
-Download the julia package by typing the following in your julia repl
-`]add https://github.com/denglerchr/Mosquitto.jl`
+This package is registered. To add it to your Julia installation/project, type
+`]add Mosquitto` or `import Pkg; Pkg.add("Mosquitto")`.
 The supported Mosquitto client binary (v2.0.15) should be downloaded automatically.
 
 ## Basic Usage
