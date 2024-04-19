@@ -6,13 +6,13 @@ message = [1, 2, 3]
 client = Client("test.mosquitto.org", 1883)
 
 @testset "Unauthenticated" begin
-    @test subscribe(client, topic) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
+    @test subscribe(client, topic)[1] == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
     @test loop(client) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
     while !isempty(get_messages_channel(client))
         # empty channel
         take!(get_messages_channel(client))
     end
-    @test publish(client, topic, message; retain = false) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
+    @test publish(client, topic, message; retain = false)[1] == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
     loop(client, ntimes = 10)
     @test Base.n_avail(get_messages_channel(client)) == 1
     if Base.n_avail(get_messages_channel(client)) >= 1
@@ -33,13 +33,13 @@ end
 
 @testset "Authenticated" begin
     @test connect(client, "test.mosquitto.org", 1884; username = "rw", password = "readwrite") == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
-    @test subscribe(client, topic) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
+    @test subscribe(client, topic)[1] == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
     @test loop(client) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
     while !isempty(get_messages_channel(client))
         # empty channel
         take!(get_messages_channel(client))
     end
-    @test publish(client, topic, message; retain = false) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
+    @test publish(client, topic, message; retain = false)[1] == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
     loop(client, ntimes = 5)
     loop(client; ntimes = 2, timeout = 5000)
     @test Base.n_avail(get_messages_channel(client)) == 1
@@ -88,13 +88,13 @@ end
 
 @testset "Unauthenticated V5" begin
     @test connect(client_v5, "test.mosquitto.org", 1883) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
-    @test subscribe(client_v5, topic) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
+    @test subscribe(client_v5, topic)[1] == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
     @test loop(client_v5) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
     while !isempty(get_messages_channel(client_v5))
         # empty channel
         take!(get_messages_channel(client_v5))
     end
-    @test publish(client_v5, topic, message; retain = false, properties = testproplist) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
+    @test publish(client_v5, topic, message; retain = false, properties = testproplist)[1] == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
     loop(client_v5, ntimes = 10)
     @test Base.n_avail(get_messages_channel(client_v5)) == 1
     if Base.n_avail(get_messages_channel(client_v5)) >= 1

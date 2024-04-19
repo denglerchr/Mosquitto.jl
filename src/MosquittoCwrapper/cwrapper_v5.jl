@@ -175,8 +175,7 @@ function publish_v5(client::Ref{Cmosquitto}, mid::Ref{Cint}, topic::String, payl
     return mosq_err_t(msg_nr)
 end
 
-function subscribe_v5(client::Ref{Cmosquitto}, sub::String; qos::Int = 1, properties::Ref{CmosquittoProperty} = C_NULL)
-    mid = zeros(Cint, 1)
+function subscribe_v5(client::Ref{Cmosquitto}, mid::Ref{Cint}, sub::String; qos::Int = 1, properties::Ref{CmosquittoProperty} = C_NULL)
     options = Cint(MQTT_SUB_OPT_SEND_RETAIN_ALWAYS) # default, can be combined using or
 
     msg_nr = ccall((:mosquitto_subscribe_v5, libmosquitto), Cint, 
@@ -186,8 +185,7 @@ function subscribe_v5(client::Ref{Cmosquitto}, sub::String; qos::Int = 1, proper
 end
 
 
-function unsubscribe_v5(client::Ref{Cmosquitto}, sub::String; properties::Ref{CmosquittoProperty} = C_NULL)
-    mid = zeros(Cint, 1)
+function unsubscribe_v5(client::Ref{Cmosquitto}, mid::Ref{Cint}, sub::String; properties::Ref{CmosquittoProperty} = C_NULL)
     msg_nr = ccall((:mosquitto_unsubscribe_v5, libmosquitto), Cint, 
                     (Ptr{Cmosquitto}, Ptr{Cint}, Cstring, Ptr{CmosquittoProperty}),
                     client, mid, sub, properties)

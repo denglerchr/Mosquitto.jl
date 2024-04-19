@@ -67,7 +67,9 @@ will_clear(client::AbstractClient) = MosquittoCwrapper.will_clear(client.cptr.mo
 """
     publish(client::AbstractClient, topic::String, payload; kw...)
 
-Publish a message to the broker. Keyword arguments:
+Publish a message to the broker. Returns the Mosquitto error code and the message id.
+
+Keyword arguments:
 * qos::Int = 1 : Quality of service
 * retain::Bool = false : if true, the broker will store this message
 * waitcb = false : if true, wait until the message was received by the broker to return. If set to true, the network loop must run asynchronously, else the function might just block forever.
@@ -86,7 +88,7 @@ function publish(client::Client, topic::String, payload; qos::Int = 1, retain::B
             mid2 = take!(get_pub_channel(client))
         end
     end
-    return rv
+    return rv, mid.x
 end
 
 
@@ -94,6 +96,7 @@ end
     subscribe(client::AbstractClient, topic::String; kw...)
 
 Subscribe to a topic. Received messages will be accessible Mosquitto.messages_channel as a Tuple{String, Vector{Uint8}}.
+Returns the Mosquitto error code and the message id.
 
 Keyword arguments:
 * qos::Int = 1
@@ -101,17 +104,27 @@ Keyword arguments:
 Additional keyword arguments, only available on Client_v5:
 * properties = Properties() : a list of properties to append to the message.
 """
-subscribe(client::Client, topic::String; qos::Int = 1) = MosquittoCwrapper.subscribe(client.cptr.mosc, topic; qos = qos)
+function subscribe(client::Client, topic::String; qos::Int = 1)
+    mid = Ref(zero(Cint))
+    rv = MosquittoCwrapper.subscribe(client.cptr.mosc, mid, topic; qos = qos)
+    return rv, mid.x
+end
 
 
 """
     unsubscribe(client::AbstractClient, topic::String)
 
 Unsubscribe from a topic.
+Returns the Mosquitto error code and the message id.
+
 Additional keyword argument, only available on Client_v5:
 * properties = Properties() : a list of properties to append to the message.
 """
-unsubscribe(client::Client, topic::String) = MosquittoCwrapper.unsubscribe(client.cptr.mosc, topic)
+function unsubscribe(client::Client, topic::String)
+    mid = Ref(zero(Cint))
+    rv = MosquittoCwrapper.unsubscribe(client.cptr.mosc, mid, topic)
+    return rv, mid.x
+end
 
 
 """
