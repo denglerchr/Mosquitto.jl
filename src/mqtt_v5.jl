@@ -30,9 +30,17 @@ function publish(client::Client_v5, topic::String, payload; qos::Int = 1, retain
             mid2 = take!(get_pub_channel(client))[1]
         end
     end
-    return rv
+    return rv, mid.x
 end
 
-subscribe(client::Client_v5, topic::String; qos::Int = 1, properties::PropertyList = PropertyList()) = MosquittoCwrapper.subscribe_v5(client.cptr.mosc, topic; qos = qos, properties = properties.mosq_prop.x)
+function subscribe(client::Client_v5, topic::String; qos::Int = 1, properties::PropertyList = PropertyList())
+    mid = Ref(zero(Cint))
+    rv = MosquittoCwrapper.subscribe_v5(client.cptr.mosc, mid, topic; qos = qos, properties = properties.mosq_prop.x)
+    return rv, mid
+end
 
-unsubscribe(client::Client_v5, topic::String; properties::PropertyList = PropertyList()) = MosquittoCwrapper.unsubscribe_v5(client.cptr.mosc, topic; properties = properties.mosq_prop.x)
+function unsubscribe(client::Client_v5, topic::String; properties::PropertyList = PropertyList())
+    mid = Ref(zero(Cint))
+    rv = MosquittoCwrapper.unsubscribe_v5(client.cptr.mosc, mid, topic; properties = properties.mosq_prop.x)
+    return rv, mid
+end

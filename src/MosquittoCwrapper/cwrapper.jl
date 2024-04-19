@@ -144,7 +144,7 @@ end
 
 # Publishing, subscribing, unsubscribing
 
-function publish(client::Ref{Cmosquitto}, mid, topic::String, payload; qos::Int = 1, retain::Bool = true)
+function publish(client::Ref{Cmosquitto}, mid::Ref{Cint}, topic::String, payload; qos::Int = 1, retain::Bool = true)
     payloadnew = getbytes(payload)
     payloadlen = length(payloadnew) # dont use sizeof, as payloadnew might be of type "reinterpreted"
     msg_nr = ccall((:mosquitto_publish, libmosquitto), Cint,
@@ -154,8 +154,7 @@ function publish(client::Ref{Cmosquitto}, mid, topic::String, payload; qos::Int 
 end
 
 
-function subscribe(client::Ref{Cmosquitto}, sub::String; qos::Int = 1)
-    mid = zeros(Cint, 1)
+function subscribe(client::Ref{Cmosquitto}, mid::Ref{Cint}, sub::String; qos::Int = 1)
     msg_nr = ccall((:mosquitto_subscribe, libmosquitto), Cint, 
     (Ptr{Cmosquitto}, Ptr{Cint}, Cstring, Cint),
     client, mid, sub, qos)
@@ -163,8 +162,7 @@ function subscribe(client::Ref{Cmosquitto}, sub::String; qos::Int = 1)
 end
 
 
-function unsubscribe(client::Ref{Cmosquitto}, sub::String)
-    mid = zeros(Cint, 1)
+function unsubscribe(client::Ref{Cmosquitto}, mid::Ref{Cint}, sub::String)
     msg_nr = ccall((:mosquitto_unsubscribe, libmosquitto), Cint, 
                     (Ptr{Cmosquitto}, Ptr{Cint}, Cstring),
                     client, mid, sub)

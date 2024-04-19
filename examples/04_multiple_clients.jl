@@ -51,9 +51,9 @@ end
 
 function main()
     # Connect to multiple brokers
-    client1 = Client("test.mosquitto.org", 1883) # will receive message
-    client2 = Client("localhost", 1883) # will publish to localhost
-    client3 = Client("localhost", 1883) # will receive from localhost
+    client1 = Client("test.mosquitto.org", 1883; id = "Receiver_Remote") # will receive message
+    client2 = Client("localhost", 1883; id = "Publisher_Local") # will publish to localhost
+    client3 = Client("localhost", 1883; id = "Receiver_Local") # will receive from localhost
     
     # Messages will be put as a Message struct
     # the channel Mosquitto.messages_channel.
