@@ -21,4 +21,4 @@ topic = "test/julia"
     disconnect(client)
 end
 
-loop_forever(client)
+Mosquitto.loop_forever(client)

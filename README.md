@@ -88,8 +88,9 @@ To awaid blocking when channels are full due to too many messages, the channels 
 
 ### Running the loop continuously
 The network loop needs to be called continuously in order to send receive messages. The simplest way to do this
-is to call the *loop(client)* function regularly. Alternatively, the mosquitto library provides
-a *loop_forever(client)* function that is wrapped as well. This background task will run until *disconnect(client)* is called and then return. As such, the message and connect events should be handled in an @async task. For an example usage, see [examples/07_loop_forever.jl](examples/07_loop_forever.jl).
+is to call the *loop(client)* function regularly. 
+
+Alternatively, the mosquitto library provides a *Mosquitto.loop_forever(client)* function that is wrapped as well. This background task will run until *disconnect(client)* is called and then return. As such, the message and connect events should be handled in an @async task. For an example usage, see [examples/07_loop_forever.jl](examples/07_loop_forever.jl). Due to reports of instability, it is recommended to use *loop(client)* instead of *Mosquitto.loop_forever(client)*.
 
 ### Authentication
 You find examples in the example folder for how to use TLS connections and user/password authetication. Currently bad credentials do not lead to any error or warning, your messages will just not be sent and you will not receive any messages.

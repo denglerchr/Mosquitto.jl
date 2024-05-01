@@ -46,6 +46,6 @@ end
 @async onmessage(client)
 
 # Loop until disconnect is called in the onmessage function
-rc = loop_forever(client)
+rc = Mosquitto.loop_forever(client)
 
 println("Done")
