@@ -72,6 +72,37 @@ end
     add_property!(proplist, "authentication-data", UInt8[1, 2, 3])
     add_property!(proplist, "content-type", "hdf5")
     add_property!(proplist, "FOO", "BAR")
+    
+
+    properties = read_property_list(proplist)
+
+    @test properties[1].name == "Hello"
+    @test String(properties[1].value) == "World"
+    @test properties[1].type == Mosquitto.MosquittoCwrapper.MQTT_PROP_TYPE_STRING_PAIR
+
+    @test properties[7].name == "content-type"
+    @test String(properties[7].value) == "hdf5"
+    @test properties[7].prop == Mosquitto.MosquittoCwrapper.MQTT_PROP_CONTENT_TYPE
+    @test properties[7].type == Mosquitto.MosquittoCwrapper.MQTT_PROP_TYPE_STRING
+
+    # Same tests with explicit Property definition
+    proplist = PropertyList()
+    property = Property("Hello", "World")
+    add_property!(proplist, property)
+    property = Property("payload-format-indicator", UInt8(1))
+    add_property!(proplist, property)
+    property = Property("receive-maximum", UInt16(200))
+    add_property!(proplist, property)
+    property = Property("message-expiry-interval", UInt32(200))
+    add_property!(proplist, property)
+    property = Property("subscription-identifier", UInt32(200))
+    add_property!(proplist, property)
+    property = Property("authentication-data", UInt8[1, 2, 3])
+    add_property!(proplist, property)
+    property = Property("content-type", "hdf5")
+    add_property!(proplist, property)
+    property = Property("FOO", "BAR")
+    add_property!(proplist, property)
 
     properties = read_property_list(proplist)
 

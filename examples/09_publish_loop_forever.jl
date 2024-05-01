@@ -22,5 +22,3 @@ topic = "test/julia"
 end
 
 loop_forever(client)
-
-
