@@ -128,7 +128,7 @@ end
 
 
 """
-    loop(client::AbstractClient; timeout::Int = 1000, ntimes::Int = 1)
+    loop(client::AbstractClient; timeout::Int = 1000, ntimes::Int = 1, autoreconnect::Bool = true)
 
 Perform a network loop. This will get messages of subscriptions and send published messages.
 """
@@ -136,7 +136,7 @@ function loop(client::AbstractClient; timeout::Int = 1000, ntimes::Int = 1, auto
     out = MosquittoCwrapper.MOSQ_ERR_INVAL
     for _ = 1:ntimes
         out = MosquittoCwrapper.loop(client.cptr.mosc; timeout = timeout)
-        if autoreconnect && out == MosquittoCwrapper.MOSQ_ERR_CONN_LOST
+        if autoreconnect && out == MosquittoCwrapper.MOSQ_ERR_CONN_LOST || out == MosquittoCwrapper.MOSQ_ERR_NO_CONN
             flag = reconnect(client)
             client.conn_status.x = ifelse( flag == MosquittoCwrapper.MOSQ_ERR_SUCCESS, true, false )  
         end
@@ -158,7 +158,7 @@ loop_forever(client::AbstractClient; timeout::Int = 1000) = MosquittoCwrapper.lo
 
 
 """
-loop_forever2(client::AbstractClient; timeout::Int = 10)
+    loop_forever2(client::AbstractClient; timeout::Int = 10)
 
 Continuously perform network loop. Reconnecting is handled, and the function returns after 
 disconnect(client) is called. This is a slower version of loop_forever, however it works on older Julia versions.
@@ -171,6 +171,14 @@ function loop_forever2(client::AbstractClient; timeout::Int = 10)
     end
     return MosquittoCwrapper.MOSQ_ERR_SUCCESS
 end
+
+
+"""
+    want_write(client::AbstractClient)
+
+Returns true if there is data ready to be written on the socket.
+"""
+want_write(client::AbstractClient) = (MosquittoCwrapper.want_write(client.cptr.mosc) & 0x01) == 0x01
 
 
 """

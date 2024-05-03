@@ -1,4 +1,9 @@
-## 0.9.0 - 2024-xx-xx
+## 0.9.1 - 2024-xx-xx
+* fix `want_write`
+* `loop` will also reconnect on `MosquittoCwrapper.MOSQ_ERR_NO_CONN`
+
+
+## 0.9.0 - 2024-05-01
 
 * `publish`, `subscribe` and `unsubscribe` now return the message id in addition to the mosquitto error code.
 * add constructor `Property(name::String, value)`
