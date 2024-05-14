@@ -1,3 +1,4 @@
 .vscode
 examples/authfiles
 docs
+Manifest.toml
