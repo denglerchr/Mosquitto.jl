@@ -136,7 +136,7 @@ function loop(client::AbstractClient; timeout::Int = 1000, ntimes::Int = 1, auto
     out = MosquittoCwrapper.MOSQ_ERR_INVAL
     for _ = 1:ntimes
         out = MosquittoCwrapper.loop(client.cptr.mosc; timeout = timeout)
-        if autoreconnect && out == MosquittoCwrapper.MOSQ_ERR_CONN_LOST || out == MosquittoCwrapper.MOSQ_ERR_NO_CONN
+        if autoreconnect && out == MosquittoCwrapper.MOSQ_ERR_CONN_LOST
             flag = reconnect(client)
             client.conn_status.x = ifelse( flag == MosquittoCwrapper.MOSQ_ERR_SUCCESS, true, false )  
         end
