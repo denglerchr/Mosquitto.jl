@@ -6,6 +6,10 @@ message = [1, 2, 3]
 client = Client("test.mosquitto.org", 1883)
 
 @testset "Unauthenticated" begin
+    ##########################
+    # This test subscribes to random topic on a public broker
+    # then publishes a messages and sees if it is returned
+    ##########################
     @test subscribe(client, topic)[1] == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
     @test loop(client) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
     while !isempty(get_messages_channel(client))
@@ -20,6 +24,25 @@ client = Client("test.mosquitto.org", 1883)
     end
     @test disconnect(client) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
     loop(client)
+
+    ##########################
+    # Same test with loop_start and loop_stop
+    ##########################
+    connect(client, "test.mosquitto.org", 1883)
+    @test loop_start(client) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
+    @test subscribe(client, topic)[1] == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
+    while !isempty(get_messages_channel(client))
+        # empty channel
+        take!(get_messages_channel(client))
+    end
+    @test publish(client, topic, message; retain = false)[1] == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
+    sleep(1) #  give the message some time to be received
+    @test Base.n_avail(get_messages_channel(client)) == 1
+    if Base.n_avail(get_messages_channel(client)) >= 1
+        @test Array(reinterpret(Int, take!(get_messages_channel(client)).payload)) == message
+    end
+    @test disconnect(client) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
+    @test loop_stop(client) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
 end
 
 

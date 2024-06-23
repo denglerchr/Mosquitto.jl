@@ -24,7 +24,7 @@ include("mqtt.jl")
 export Client, get_messages_channel, get_connect_channel, get_pub_channel
 export connect, reconnect, disconnect
 export publish, subscribe, unsubscribe, want_write
-export loop
+export loop, loop_start, loop_stop
 export tls_set, tls_psk_set
 export will_set, will_clear
 

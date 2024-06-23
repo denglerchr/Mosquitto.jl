@@ -146,6 +146,27 @@ end
 
 
 """
+    loop_start(client::AbstractClient)
+
+Call this once to start a new C thread to process network traffic. This provides an alternative to repeatedly calling mosquitto_loop yourself.
+"""
+function loop_start(client::AbstractClient)
+    return MosquittoCwrapper.loop_start(client.cptr.mosc)
+end
+
+
+"""
+    loop_stop(client::AbstractClient; force::Bool = false)
+
+Call this once to stop the network thread previously created with `loop_start`. 
+This call will block until the network thread finishes. For the network thread to end, you must have previously called `disconnect` or have set the force parameter to true.
+"""
+function loop_stop(client::AbstractClient; force::Bool = false)
+    return MosquittoCwrapper.loop_stop(client.cptr.mosc; force = force)
+end
+
+
+"""
     loop_forever(client::AbstractClient; timeout::Int = 1000)
 
 Continuously perform network loop. Reconnecting is handled, and the function returns after 
