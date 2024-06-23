@@ -1,4 +1,4 @@
-## 0.10.0 2024-xx-xx
+## 0.10.0 2024-06-23
 * Revert change: `loop` will no more reconnect on `MosquittoCwrapper.MOSQ_ERR_NO_CONN`. This lead to reconnects also on intended disconnects.
 * add `loop_start` and `loop_stop`
 
