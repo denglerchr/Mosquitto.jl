@@ -1,7 +1,7 @@
 name = "Mosquitto"
 uuid = "db317de6-444b-4dfa-9d0e-fbf3d8dd78ea"
 authors = ["Christian Dengler <sumo_spider@yahoo.de>"]
-version = "0.9.1"
+version = "0.10.0"
 
 [deps]
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
