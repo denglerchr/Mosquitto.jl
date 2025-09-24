@@ -47,7 +47,7 @@ Available keyword arguments:
 * `pub_channel`::Channel{Cint} : a channel that is receiving message ids for successfully published messages
 """
 function Client(ip::String, port::Int=1883; kw...)
-    
+
     # Create a Client object
     client = Client( ; kw...)
 
@@ -96,7 +96,7 @@ get_messages_channel(client::AbstractClient) = client.cptr.callbackobjs.x.messag
 """
     <get_connect_channel(client::AbstractClient)
 
-Returns the channel that contains messages on connect or diconnect events for the client
+Returns the channel that contains messages on connect or disconnect events for the client
 """
 get_connect_channel(client::AbstractClient) = client.cptr.callbackobjs.x.connect_channel
 
