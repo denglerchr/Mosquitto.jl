@@ -1,3 +1,6 @@
+## 0.10.1 2025-09-25
+* Allow `publish(client, topic, nothing)` which will send an empty payload (the same as `publish(client, topic, UInt8[])`).
+
 ## 0.10.0 2024-06-23
 * Revert change: `loop` will no more reconnect on `MosquittoCwrapper.MOSQ_ERR_NO_CONN`. This lead to reconnects also on intended disconnects.
 * add `loop_start` and `loop_stop`
