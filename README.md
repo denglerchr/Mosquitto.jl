@@ -9,7 +9,7 @@ The supported Mosquitto client binary (v2.0.15) should be downloaded automatical
 
 ## Basic Usage
 
-Apart from the descriptions below, exampled can be found in the [examples](examples/) folder
+Apart from the descriptions below, examples can be found in the [examples](examples/) folder
 
 ### Connect to a broker
 
@@ -38,7 +38,7 @@ A message can be of type string, or of a type that can be converted to a Vector{
 topic = "test"
 subscribe(client, topic)
 ```
-The subscription will vanish on disonnect. To automatically subscribe each time the client connects, you can subscribe after a connection was detected. Please look at the example [examples/03_subscribe_onconnect.jl](examples/03_subscribe_onconnect.jl) 
+The subscription will vanish on disconnect. To automatically subscribe each time the client connects, you can subscribe after a connection was detected. Please look at the example [examples/03_subscribe_onconnect.jl](examples/03_subscribe_onconnect.jl) 
 
 ### Simple example
 
@@ -60,7 +60,7 @@ topic = "jltest"
 subscribe(client, topic)
 
 # 3)
-# Send 2 messages, first one will remain in the broker an be received on new connect
+# Send 2 messages, first one will remain in the broker and then received on new connect
 publish(client, topic, "Hi from Julia"; retain = true)
 publish(client, topic, "Another message"; retain = false)
 
@@ -82,31 +82,33 @@ While the mosquitto C library requires callback functions, this package uses Cha
 * `get_messages_channel(client)`
 * `get_connect_channel(client)`
 
-To awaid blocking when channels are full due to too many messages, the channels can be treated similar as circular buffers, i.e., first item is removed if the channel is full and a new item is pushed. The options to activate this behavior are keyword options of the Client constructor
+To avoid blocking when channels are full due to too many messages, the channels can be treated similar as circular buffers, i.e., first item is removed if the channel is full and a new item is pushed. The options to activate this behavior are keyword options of the Client constructor:
 * `autocleanse_message_channel`
 * `autocleanse_connect_channel`
 
 ### Running the loop continuously
-The network loop needs to be called continuously in order to send receive messages. The simplest way to do this
-is to call the *loop(client)* function regularly. 
+The network loop needs to be called continuously in order to send/receive messages. The simplest way to do this
+is to call the `loop(client)` function regularly. 
 
-Alternatively, the mosquitto library provides a *Mosquitto.loop_forever(client)* function that is wrapped as well. This background task will run until *disconnect(client)* is called and then return. As such, the message and connect events should be handled in an @async task. For an example usage, see [examples/07_loop_forever.jl](examples/07_loop_forever.jl). Due to reports of instability, it is recommended to use *loop(client)* instead of *Mosquitto.loop_forever(client)*.
+As a first alternative, the functions `loop_start(client)` and `loop_stop(client)` can be called to handle this in another C-thread.
+
+As a second alternative, the mosquitto library provides a `Mosquitto.loop_forever(client)` function that is wrapped as well. This background task will run until `disconnect(client)` is called and then return. As such, the message and connect events should be handled in an @async task. For an example usage, see [examples/07_loop_forever.jl](examples/07_loop_forever.jl). Due to reports of instability, it is recommended to use `loop(client)` instead of `Mosquitto.loop_forever(client)`.
 
 ### Authentication
-You find examples in the example folder for how to use TLS connections and user/password authetication. Currently bad credentials do not lead to any error or warning, your messages will just not be sent and you will not receive any messages.
+You find examples in the example folder for how to use TLS connections and user/password authentication. Currently bad credentials do not lead to any error or warning, your messages will just not be sent and you will not receive any messages.
 
 ### Using MQTT v5
-Instead of creating a `Client` object, create a `Client_v5` object. Most functions like `publish`, `subscribe`, `loop` etc are overloaded to work the same way as for the v3.1.1 client, except some of them accept an optional keyword argument `properties`.
+Instead of creating a `Client` object, create a `Client_v5` object. Most functions like `publish`, `subscribe`, `loop` etc are overloaded to work the same way as for the v3.1.1 client, except some of them accepting an optional keyword argument `properties`.
 This keyword argument can be set to a `PropertyList`. See the example [examples/09_MQTT5_properties.jl](examples/09_MQTT5_properties.jl) for an example on how to use properties, or consult `?PropertyList`.
 
 ### Advanced example
 
 ```julia
 # Read 20 messages in topic "test/..." from the public broker test.mosquitto.org
-# Different from the previous example, the client will resubscribe to its topic every time it connects to the broker
+# Different from the previous example, the client will resubscribe to the topic every time it connects to the broker
 using Mosquitto
 
-# Connect to a broker using tls and username/password authetication.
+# Connect to a broker using tls and username/password authentication.
 # The CA certificate can be downloaded from the mosquitto page https://test.mosquitto.org/ssl/mosquitto.org.crt
 # The connect function must be used only after tls_set.
 client = Client(; id = "JuliaClient1")

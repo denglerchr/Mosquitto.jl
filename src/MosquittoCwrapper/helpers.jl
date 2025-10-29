@@ -3,3 +3,4 @@
 @inline getbytes(in::AbstractVector{UInt8}) = in
 @inline getbytes(in::Number) = reinterpret(UInt8, [in])
 @inline getbytes(in) = reinterpret(UInt8, in)
+@inline getbytes(::Nothing) = UInt8[]

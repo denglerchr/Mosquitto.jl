@@ -4,9 +4,6 @@
 using Mosquitto
 const messages_until_disconnect = 200
 
-# Connect to a broker
-client = Client("test.mosquitto.org", 1883)
-
 # subscribe to topic "test" every time the client connects. Return on disconnect.
 function onconnect(client)
     disconnect = false
@@ -40,12 +37,18 @@ function onmessage(client)
     return msgcount
 end
 
+function main()
+    # Connect to a broker
+    client = Client("test.mosquitto.org", 1883)
 
-# message and connection handling on thread 1 asynchronously
-@async onconnect(client)
-@async onmessage(client)
+    # message and connection handling on thread 1 asynchronously
+    @async onconnect(client)
+    @async onmessage(client)
 
-# Loop until disconnect is called in the onmessage function
-rc = Mosquitto.loop_forever(client)
+    # Loop until disconnect is called in the onmessage function
+    rc = Mosquitto.loop_forever(client)
 
-println("Done")
+    println("Done")
+end
+
+main()

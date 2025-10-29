@@ -171,17 +171,17 @@ end
 
 # Network loop (managed by libmosquitto)
 
-#= Needs to compile libmosquitto with pthreads
 function loop_start(client::Ref{Cmosquitto})
     msg_nr = ccall((:mosquitto_loop_start, libmosquitto), Cint, (Ptr{Cmosquitto},), client)
-    return msg_nr
+    return mosq_err_t(msg_nr)
 end
+
 
 function loop_stop(client::Ref{Cmosquitto}; force::Bool = false)
     msg_nr = ccall((:mosquitto_loop_stop, libmosquitto), Cint, (Ptr{Cmosquitto}, Bool), client, force)
-    return msg_nr
+    return mosq_err_t(msg_nr)
 end
-=#
+
 
 function loop_forever(client::Ref{Cmosquitto}; timeout::Int = 1000, max_packets::Int = 1)
     msg_nr = @threadcall((:mosquitto_loop_forever, libmosquitto), Cint, (Ptr{Cmosquitto}, Cint, Cint), client, timeout, max_packets)
