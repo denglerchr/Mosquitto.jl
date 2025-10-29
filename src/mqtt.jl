@@ -185,12 +185,24 @@ want_write(client::AbstractClient) = (MosquittoCwrapper.want_write(client.cptr.m
     tls_set(client::AbstractClient, cafile::String; certfile::String = "", keyfile::String = "")
 """
 function tls_set(client::AbstractClient, cafile::String; certfile::String = "", keyfile::String = "")
-    xor( certfile == "", keyfile == "" ) && throw("You need to either provide both cert and key files, or none of both")
+    xor( certfile == "", keyfile == "" ) && error("You need to either provide both cert and key files, or none of both")
     if certfile == ""
         return MosquittoCwrapper.tls_set(client.cptr.mosc, cafile, C_NULL, C_NULL, C_NULL, C_NULL)
     else
         return MosquittoCwrapper.tls_set(client.cptr.mosc, cafile, C_NULL, certfile, keyfile, C_NULL)
     end
+end
+
+
+"""
+    tls_insecure_set(client::AbstractClient, value::Bool)
+
+Configure verification of the server hostname in the server certificate.
+If value is set to true, it is impossible to guarantee that the host you are connecting to is not impersonating your server. This can be useful in initial server testing, but makes it possible for a malicious third party to impersonate your server through DNS spoofing, for example.
+Do not use this function in production. Must be called before `connect`.
+"""
+function tls_insecure_set(client::AbstractClient, value::Bool)
+    return MosquittoCwrapper.tls_insecure_set(client.cptr.mosc, value)
 end
 
 

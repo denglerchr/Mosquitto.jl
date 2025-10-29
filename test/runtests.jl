@@ -141,6 +141,9 @@ end
     loop(client_v5)
 end
 
+@testset "Misc" begin
+    @test tls_insecure_set(client, true) == Mosquitto.MosquittoCwrapper.MOSQ_ERR_SUCCESS
+end
 
 ## Check for memory leaks
 # GC.gc()

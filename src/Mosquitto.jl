@@ -25,7 +25,7 @@ export Client, get_messages_channel, get_connect_channel, get_pub_channel
 export connect, reconnect, disconnect
 export publish, subscribe, unsubscribe, want_write
 export loop
-export tls_set, tls_psk_set
+export tls_set, tls_insecure_set, tls_psk_set
 export will_set, will_clear
 
 include("properties_v5.jl")

@@ -223,6 +223,12 @@ function tls_set(client::Ref{Cmosquitto}, cafile, capath, certfile, keyfile, cal
 end
 
 
+function tls_insecure_set(client::Ref{Cmosquitto}, value::Bool)
+    msg_nr = ccall((:mosquitto_tls_insecure_set, libmosquitto), Cint, (Ptr{Cmosquitto}, Bool), client, value)
+    return mosq_err_t(msg_nr)
+end
+
+
 function tls_psk_set(client::Ref{Cmosquitto}, psk::String, identity::String, ciphers::Nothing)
     msg_nr = ccall((:mosquitto_tls_psk_set, libmosquitto), Cint, (Ptr{Cmosquitto}, Cstring, Cstring, Cstring), client, psk, identity, C_NULL)
     return mosq_err_t(msg_nr)
